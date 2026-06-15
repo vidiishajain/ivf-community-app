@@ -48,14 +48,29 @@ function ChatView({ profile, onBack }) {
   const color     = getAvatarColor(profile.display_name)
   const ini       = getInitials(profile.display_name)
   const [messages, setMessages] = useState([
-    {
-      id: 1, from: 'them',
-      text: `Hi! I saw we matched — it\'s really nice to connect with someone at the same stage 🌸`,
-      time: 'just now',
-    }
+    { id: 1, from: 'them', text: `Hi! I saw we matched — it\'s really nice to connect with someone at the same stage 🌸`, time: 'just now' }
   ])
-  const [input, setInput]   = useState('')
-  const bottomRef           = useRef(null)
+  const [input, setInput]         = useState('')
+  const bottomRef                 = useRef(null)
+  const inputRef                  = useRef(null)
+  const [bottomOffset, setBottomOffset] = useState(68)
+
+  // Adjust input position when keyboard opens on mobile
+  useEffect(() => {
+    if (!window.visualViewport) return
+    function onViewportChange() {
+      const vv = window.visualViewport
+      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop
+      setBottomOffset(Math.max(68, keyboardHeight + 8))
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
+    }
+    window.visualViewport.addEventListener('resize', onViewportChange)
+    window.visualViewport.addEventListener('scroll', onViewportChange)
+    return () => {
+      window.visualViewport.removeEventListener('resize', onViewportChange)
+      window.visualViewport.removeEventListener('scroll', onViewportChange)
+    }
+  }, [])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
@@ -63,10 +78,12 @@ function ChatView({ profile, onBack }) {
     if (!input.trim()) return
     setMessages(prev => [...prev, { id: Date.now(), from: 'me', text: input.trim(), time: 'just now' }])
     setInput('')
+    setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+
       <div style={{
         padding: '16px 20px', borderBottom: '1px solid var(--border)',
         background: 'var(--sidebar)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
@@ -83,7 +100,7 @@ function ChatView({ profile, onBack }) {
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: '90px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: `${bottomOffset + 60}px` }}>
         {messages.map(msg => {
           const isMe = msg.from === 'me'
           return (
@@ -96,7 +113,8 @@ function ChatView({ profile, onBack }) {
                 }}>{ini}</div>
               )}
               <div style={{
-                maxWidth: '72%', padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                maxWidth: '72%', padding: '10px 14px',
+                borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
                 background: isMe ? 'var(--accent)' : 'var(--code-bg)',
                 border: isMe ? 'none' : '1px solid var(--border)',
               }}>
@@ -111,14 +129,17 @@ function ChatView({ profile, onBack }) {
       </div>
 
       <div style={{
-        position: 'fixed', bottom: '68px', left: 0, right: 0,
+        position: 'fixed', left: 0, right: 0, bottom: `${bottomOffset}px`,
         padding: '12px 16px', background: 'var(--sidebar)', borderTop: '1px solid var(--border)',
         display: 'flex', gap: '10px',
+        transition: 'bottom 0.15s ease',
       }}>
         <input
+          ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
+          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 350)}
           placeholder={`Message ${firstName}...`}
           style={{
             flex: 1, background: 'var(--code-bg)', border: '1px solid var(--border)',
@@ -166,25 +187,18 @@ export default function Matches() {
     setConnecting(prev => ({ ...prev, [profileId]: true }))
     try {
       const { data: { user } } = await supabase.auth.getUser()
-
-      // Prevent duplicate connections
       const { data: existing } = await supabase
         .from('connections')
         .select('id')
         .or(`and(requester_id.eq.${user.id},receiver_id.eq.${profileId}),and(requester_id.eq.${profileId},receiver_id.eq.${user.id})`)
-
       if (existing && existing.length > 0) {
         setConnections(prev => ({ ...prev, [profileId]: true }))
         return
       }
-
       await supabase.from('connections').insert({ requester_id: user.id, receiver_id: profileId, status: 'accepted' })
       setConnections(prev => ({ ...prev, [profileId]: true }))
-    } catch (e) {
-      console.error('Connect error:', e)
-    } finally {
-      setConnecting(prev => ({ ...prev, [profileId]: false }))
-    }
+    } catch (e) { console.error('Connect error:', e) }
+    finally { setConnecting(prev => ({ ...prev, [profileId]: false })) }
   }
 
   async function handleThumbsUp(profileId) {
@@ -198,9 +212,11 @@ export default function Matches() {
     setRemoved(prev => ({ ...prev, [profileId]: true }))
   }
 
-  if (chatTarget)     return <ChatView profile={chatTarget} onBack={() => setChatTarget(null)} />
+  if (chatTarget) return <ChatView profile={chatTarget} onBack={() => setChatTarget(null)} />
   if (feedbackTarget) return (
-    <ConnectionFeedback reviewedId={feedbackTarget.id} onDone={() => { setRated(p => ({...p, [feedbackTarget.id]: true})); setFeedbackTarget(null) }} onBack={() => setFeedbackTarget(null)} />
+    <ConnectionFeedback reviewedId={feedbackTarget.id}
+      onDone={() => { setRated(p => ({...p, [feedbackTarget.id]: true})); setFeedbackTarget(null) }}
+      onBack={() => setFeedbackTarget(null)} />
   )
 
   if (loading) return (
@@ -216,29 +232,23 @@ export default function Matches() {
       <p style={{ color: 'var(--text-h)', fontSize: '22px', fontWeight: '700', marginBottom: '4px' }}>Your Matches</p>
       <p style={{ color: 'var(--text)', fontSize: '13px', opacity: 0.6, marginBottom: '28px' }}>Women on a similar journey to yours</p>
 
-      {/* Empty state */}
       {visible.length === 0 && (
-        <div style={{
-          background: 'var(--code-bg)', border: '1px solid var(--border)',
-          borderRadius: 18, padding: '48px 24px', textAlign: 'center',
-        }}>
+        <div style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '48px 24px', textAlign: 'center' }}>
           <div style={{ fontSize: 36, marginBottom: 12 }}>🌸</div>
           <p style={{ color: 'var(--text-h)', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>More people are joining</p>
-          <p style={{ color: 'var(--text)', fontSize: 14, opacity: 0.7, margin: 0 }}>
-            No close matches yet. As more women join, we'll find the right people for you.
-          </p>
+          <p style={{ color: 'var(--text)', fontSize: 14, opacity: 0.7, margin: 0 }}>No close matches yet. As more women join, we'll find the right people for you.</p>
         </div>
       )}
 
       {visible.map(({ profile, matchPct }, i) => {
-        const connected  = connections[profile.id]
+        const connected    = connections[profile.id]
         const isConnecting = connecting[profile.id]
-        const hasRated   = rated[profile.id]
-        const pct        = Math.round(matchPct)
-        const color      = getAvatarColor(profile.display_name)
-        const ini        = getInitials(profile.display_name)
-        const smartLine  = getSmartLine(profile)
-        const sameStage  = currentProfile?.ivf_stage === profile.ivf_stage
+        const hasRated     = rated[profile.id]
+        const pct          = Math.round(matchPct)
+        const color        = getAvatarColor(profile.display_name)
+        const ini          = getInitials(profile.display_name)
+        const smartLine    = getSmartLine(profile)
+        const sameStage    = currentProfile?.ivf_stage === profile.ivf_stage
 
         return (
           <div key={profile.id} className="match-card-anim" style={{
@@ -295,18 +305,14 @@ export default function Matches() {
                   )}
                 </div>
               ) : (
-                <button
-                  onClick={() => handleConnect(profile.id)}
-                  disabled={isConnecting}
-                  style={{
-                    flex: 1, padding: '10px 16px',
-                    background: isConnecting ? 'var(--border)' : 'var(--accent)',
-                    border: 'none', color: '#fff', borderRadius: '12px',
-                    cursor: isConnecting ? 'not-allowed' : 'pointer',
-                    fontSize: '14px', fontWeight: '600', opacity: isConnecting ? 0.7 : 1,
-                    transition: 'opacity 0.2s',
-                  }}
-                >
+                <button onClick={() => handleConnect(profile.id)} disabled={isConnecting} style={{
+                  flex: 1, padding: '10px 16px',
+                  background: isConnecting ? 'var(--border)' : 'var(--accent)',
+                  border: 'none', color: '#fff', borderRadius: '12px',
+                  cursor: isConnecting ? 'not-allowed' : 'pointer',
+                  fontSize: '14px', fontWeight: '600', opacity: isConnecting ? 0.7 : 1,
+                  transition: 'opacity 0.2s',
+                }}>
                   {isConnecting ? 'Connecting…' : 'Request to connect'}
                 </button>
               )}
