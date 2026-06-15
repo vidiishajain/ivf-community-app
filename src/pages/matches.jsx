@@ -23,14 +23,16 @@ const STAGE_LABELS = {
   10:'Two-week wait', 11:'Awaiting results', 12:'Reflection & recovery',
 }
 const PERSONA_PHRASES = {
-  1:'finds comfort in open, honest conversations',
-  2:'appreciates practical advice and clear answers',
-  3:'loves connecting through shared stories',
-  4:'values quiet understanding over advice',
+  1: "She's someone who finds it easier to say the hard things out loud.",
+  2: "She'd rather have honest answers than empty reassurance.",
+  3: "She connects through real stories, not advice. She's been there.",
+  4: "She's the kind of person who just sits with you. No fixing. No advice.",
 }
 const PATHWAY_CONTEXT = {
-  1:'natural IVF protocol', 2:'standard IVF cycle',
-  3:'donor egg pathway', 4:'freeze-all cycle',
+  1: "On the NHS pathway.",
+  2: "Funding this herself.",
+  3: "Combining NHS and private treatment.",
+  4: "Going through treatment abroad.",
 }
 const PATHWAY_LABELS = {
   1: 'NHS funded', 2: 'Privately funded', 3: 'NHS & private', 4: 'International clinic',
@@ -60,11 +62,10 @@ function getSharedHobbies(myHobbies, theirHobbies) {
 }
 
 function getSmartLine(profile) {
-  const firstName = (profile.display_name || '').split(' ')[0]
-  const persona   = PERSONA_PHRASES[profile.persona]
-  const pathway   = PATHWAY_CONTEXT[profile.pathway]
-  if (persona && pathway) return `${firstName} ${persona}, currently on a ${pathway}.`
-  if (persona)            return `${firstName} ${persona}.`
+  const persona = PERSONA_PHRASES[profile.persona]
+  const pathway = PATHWAY_CONTEXT[profile.pathway]
+  if (persona && pathway) return `${persona} ${pathway}`
+  if (persona)            return persona
   return null
 }
 function matchLabel(pct) {
