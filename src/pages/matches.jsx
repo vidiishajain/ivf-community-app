@@ -26,6 +26,21 @@ function formatTime(timestamp) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
+// Track read state per conversation in localStorage
+function getLastRead(myId, otherId) {
+  return localStorage.getItem(`last_read_${myId}_${otherId}`) || null
+}
+function markAsRead(myId, otherId) {
+  localStorage.setItem(`last_read_${myId}_${otherId}`, new Date().toISOString())
+}
+function isUnread(myId, lastMessage) {
+  if (!lastMessage) return false
+  if (lastMessage.sender_id === myId) return false
+  const lastRead = getLastRead(myId, lastMessage.sender_id)
+  if (!lastRead) return true
+  return new Date(lastMessage.created_at) > new Date(lastRead)
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const STAGE_LABELS = {
@@ -98,16 +113,17 @@ function matchLabel(pct) {
 // ─── ChatView ────────────────────────────────────────────────────────────────
 
 function ChatView({ profile, myId, onBack }) {
-  const firstName             = (profile.display_name || '').split(' ')[0]
-  const color                 = getAvatarColor(profile.display_name)
-  const ini                   = getInitials(profile.display_name)
-  const [messages, setMessages]     = useState([])
-  const [input, setInput]           = useState('')
-  const [loadingMsgs, setLoadingMsgs] = useState(true)
+  const firstName               = (profile.display_name || '').split(' ')[0]
+  const color                   = getAvatarColor(profile.display_name)
+  const ini                     = getInitials(profile.display_name)
+  const [messages, setMessages] = useState([])
+  const [input, setInput]       = useState('')
+  const [loadingMsgs, setLoadingMsgs]   = useState(true)
   const [bottomOffset, setBottomOffset] = useState(68)
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
+  // Load existing messages
   useEffect(() => { loadMessages() }, [])
 
   async function loadMessages() {
@@ -126,9 +142,42 @@ function ChatView({ profile, myId, onBack }) {
         })))
       }
     } catch (e) { console.error('Load messages error:', e) }
-    finally { setLoadingMsgs(false) }
+    finally {
+      setLoadingMsgs(false)
+      // Mark conversation as read when chat opens
+      markAsRead(myId, profile.id)
+    }
   }
 
+  // Realtime subscription — listens for new messages in this conversation
+  useEffect(() => {
+    if (!myId || !profile?.id) return
+
+    const channel = supabase
+      .channel(`chat_${[myId, profile.id].sort().join('_')}`)
+      .on('postgres_changes', {
+        event:  'INSERT',
+        schema: 'public',
+        table:  'messages',
+        filter: `receiver_id=eq.${myId}`,
+      }, (payload) => {
+        const msg = payload.new
+        // Only add if it's from the person we're chatting with
+        if (msg.sender_id !== profile.id) return
+        setMessages(prev => [...prev, {
+          id:   msg.id,
+          from: 'them',
+          text: msg.content,
+          time: formatTime(msg.created_at),
+        }])
+        markAsRead(myId, profile.id)
+      })
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [myId, profile?.id])
+
+  // Keyboard offset for mobile
   useEffect(() => {
     if (!window.visualViewport) return
     function onViewportChange() {
@@ -150,6 +199,7 @@ function ChatView({ profile, myId, onBack }) {
   async function send(text) {
     const content = (text !== undefined ? text : input).trim()
     if (!content) return
+    // Optimistic update
     setMessages(prev => [...prev, { id: Date.now(), from: 'me', text: content, time: 'just now' }])
     setInput('')
     setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 50)
@@ -162,13 +212,19 @@ function ChatView({ profile, myId, onBack }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+
       {/* Header */}
       <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--sidebar)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 22 }}>←</button>
         <div style={{ width: 38, height: 38, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{ini}</div>
-        <div>
+        <div style={{ flex: 1 }}>
           <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: 600, margin: 0 }}>{profile.display_name}</p>
           <p style={{ color: 'var(--text)', fontSize: 11, opacity: 0.5, margin: 0 }}>Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}</p>
+        </div>
+        {/* Live indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
+          <span style={{ fontSize: 11, color: 'var(--text)', opacity: 0.5 }}>Live</span>
         </div>
       </div>
 
@@ -229,7 +285,7 @@ function ChatView({ profile, myId, onBack }) {
   )
 }
 
-// ─── ConversationList ────────────────────────────────────────────────────────
+// ─── ConversationList ─────────────────────────────────────────────────────────
 
 function ConversationList({ myId, onOpenChat }) {
   const [conversations, setConversations] = useState([])
@@ -297,23 +353,32 @@ function ConversationList({ myId, onOpenChat }) {
   return (
     <div>
       {conversations.map(({ profile, lastMessage }) => {
-        const color   = getAvatarColor(profile.display_name)
-        const ini     = getInitials(profile.display_name)
-        const preview = lastMessage
+        const color     = getAvatarColor(profile.display_name)
+        const ini       = getInitials(profile.display_name)
+        const unread    = isUnread(myId, lastMessage)
+        const preview   = lastMessage
           ? (lastMessage.content.length > 52 ? lastMessage.content.slice(0, 52) + '…' : lastMessage.content)
           : 'Start a conversation'
-        const timeStr = lastMessage ? formatTime(lastMessage.created_at) : ''
+        const timeStr   = lastMessage ? formatTime(lastMessage.created_at) : ''
 
         return (
           <button key={profile.id} onClick={() => onOpenChat(profile)}
-            style={{ width: '100%', background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left' }}>
-            <div style={{ width: 48, height: 48, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{ini}</div>
+            style={{ width: '100%', background: unread ? 'var(--code-bg)' : 'var(--code-bg)', border: `1px solid ${unread ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left' }}>
+
+            {/* Avatar with unread dot */}
+            <div style={{ position: 'relative', flexShrink: 0 }}>
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff' }}>{ini}</div>
+              {unread && (
+                <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg)' }} />
+              )}
+            </div>
+
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: 600, margin: 0 }}>{profile.display_name}</p>
-                {timeStr && <span style={{ color: 'var(--text)', fontSize: 11, opacity: 0.45, flexShrink: 0 }}>{timeStr}</span>}
+                <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: unread ? 700 : 600, margin: 0 }}>{profile.display_name}</p>
+                {timeStr && <span style={{ color: unread ? 'var(--accent)' : 'var(--text)', fontSize: 11, opacity: unread ? 1 : 0.45, flexShrink: 0, fontWeight: unread ? 600 : 400 }}>{timeStr}</span>}
               </div>
-              <p style={{ color: 'var(--text)', fontSize: 13, opacity: lastMessage ? 0.65 : 0.4, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: lastMessage ? 'normal' : 'italic' }}>
+              <p style={{ color: unread ? 'var(--text-h)' : 'var(--text)', fontSize: 13, opacity: lastMessage ? (unread ? 0.9 : 0.65) : 0.4, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: lastMessage ? 'normal' : 'italic', fontWeight: unread ? 500 : 400 }}>
                 {preview}
               </p>
             </div>
@@ -324,7 +389,7 @@ function ConversationList({ myId, onOpenChat }) {
   )
 }
 
-// ─── Main Matches export ─────────────────────────────────────────────────────
+// ─── Main Matches export ──────────────────────────────────────────────────────
 
 export default function Matches() {
   const [currentProfile, setCurrentProfile] = useState(null)
@@ -338,8 +403,34 @@ export default function Matches() {
   const [feedbackTarget, setFeedbackTarget] = useState(null)
   const [chatTarget, setChatTarget]         = useState(null)
   const [view, setView]                     = useState('matches')
+  const [hasUnread, setHasUnread]           = useState(false)
 
   useEffect(() => { loadMatches() }, [])
+
+  // Re-check unread whenever view changes or myId is set
+  useEffect(() => {
+    if (!myId) return
+    if (view === 'messages') { setHasUnread(false); return }
+    checkUnreads()
+  }, [myId, view])
+
+  async function checkUnreads() {
+    try {
+      const { data } = await supabase
+        .from('messages')
+        .select('sender_id, created_at')
+        .eq('receiver_id', myId)
+        .order('created_at', { ascending: false })
+        .limit(30)
+      if (!data) return
+      const anyUnread = data.some(msg => {
+        const lastRead = getLastRead(myId, msg.sender_id)
+        if (!lastRead) return true
+        return new Date(msg.created_at) > new Date(lastRead)
+      })
+      setHasUnread(anyUnread)
+    } catch (e) { console.error(e) }
+  }
 
   async function loadMatches() {
     try {
@@ -383,7 +474,7 @@ export default function Matches() {
 
   // Full-screen overlays
   if (chatTarget) return (
-    <ChatView profile={chatTarget} myId={myId} onBack={() => setChatTarget(null)} />
+    <ChatView profile={chatTarget} myId={myId} onBack={() => { setChatTarget(null); checkUnreads() }} />
   )
   if (feedbackTarget) return (
     <ConnectionFeedback
@@ -397,7 +488,6 @@ export default function Matches() {
   return (
     <div style={{ padding: '28px 20px 16px' }}>
 
-      {/* Title */}
       <p style={{ color: 'var(--text-h)', fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
         {view === 'matches' ? 'Your Matches' : 'Messages'}
       </p>
@@ -405,15 +495,18 @@ export default function Matches() {
         {view === 'matches' ? 'Women on a similar journey to yours' : 'Your connected conversations'}
       </p>
 
-      {/* Toggle */}
+      {/* Toggle with unread badge */}
       <div style={{ display: 'flex', background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 4, marginBottom: 24 }}>
         <button onClick={() => setView('matches')}
           style={{ flex: 1, padding: '9px', borderRadius: 9, background: view === 'matches' ? 'var(--accent)' : 'transparent', border: 'none', color: view === 'matches' ? '#fff' : 'var(--text)', fontSize: 14, fontWeight: view === 'matches' ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}>
           Find Matches
         </button>
         <button onClick={() => setView('messages')}
-          style={{ flex: 1, padding: '9px', borderRadius: 9, background: view === 'messages' ? 'var(--accent)' : 'transparent', border: 'none', color: view === 'messages' ? '#fff' : 'var(--text)', fontSize: 14, fontWeight: view === 'messages' ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s' }}>
+          style={{ flex: 1, padding: '9px', borderRadius: 9, background: view === 'messages' ? 'var(--accent)' : 'transparent', border: 'none', color: view === 'messages' ? '#fff' : 'var(--text)', fontSize: 14, fontWeight: view === 'messages' ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
           Messages
+          {hasUnread && view !== 'messages' && (
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: view === 'messages' ? '#fff' : 'var(--accent)', display: 'inline-block', flexShrink: 0 }} />
+          )}
         </button>
       </div>
 
@@ -454,9 +547,9 @@ export default function Matches() {
             const pathwayLabel     = PATHWAY_LABELS[profile.pathway] || null
             const fundingRoundLine = [pathwayLabel, roundLabel].filter(Boolean).join(' · ')
 
-            const sharedHobbies    = getSharedHobbies(currentProfile?.hobbies_vec, profile.hobbies_vec)
-            const hobbyNames       = sharedHobbies.slice(0, 2).map(h => HOBBY_LABELS[h] || h)
-            const hobbyLine        = hobbyNames.length > 0
+            const sharedHobbies = getSharedHobbies(currentProfile?.hobbies_vec, profile.hobbies_vec)
+            const hobbyNames    = sharedHobbies.slice(0, 2).map(h => HOBBY_LABELS[h] || h)
+            const hobbyLine     = hobbyNames.length > 0
               ? `You both unwind through ${hobbyNames.join(' and ')}`
               : null
 
@@ -465,7 +558,6 @@ export default function Matches() {
             return (
               <div key={profile.id} className="match-card-anim" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 18, padding: 20, marginBottom: 16, animationDelay: `${i * 0.07}s` }}>
 
-                {/* Avatar + name + stage */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16 }}>
                   <div style={{ width: 64, height: 64, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff', flexShrink: 0, boxShadow: `0 0 0 3px ${color}55` }}>{ini}</div>
                   <div>
@@ -477,10 +569,8 @@ export default function Matches() {
                   </div>
                 </div>
 
-                {/* Match label */}
                 <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>✦ {matchLabel(pct)}</span>
 
-                {/* Highlight box */}
                 {hasHighlightBox && (
                   <div style={{ background: 'var(--border)', borderRadius: 10, borderLeft: `3px solid ${color}`, padding: '10px 14px', margin: '12px 0' }}>
                     {sameStage && (
@@ -497,7 +587,6 @@ export default function Matches() {
 
                 <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
 
-                {/* Actions */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   {hasRated ? (
                     <span style={{ fontSize: 13, color: 'var(--accent)', fontWeight: 600 }}>Rated ✓</span>
