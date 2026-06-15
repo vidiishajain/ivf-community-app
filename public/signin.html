@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IVF Community — Sign In</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <style>
+    *, *::before, *::after {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+
+    /* ─── Layout ─────────────────────────────── */
+    .container {
+      display: flex;
+      width: 100%;
+      height: 100vh;
+    }
+
+    /* ─── Left Panel ─────────────────────────── */
+    .left-panel {
+      width: 62%;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+
+      background-color: #EDE8F4;
+      background-image:
+        radial-gradient(ellipse 80% 70% at 35% 85%, #0D0B55 0%, #1a1266 30%, transparent 70%),
+        radial-gradient(ellipse 65% 60% at 60% 75%, #2D1FA3 0%, transparent 60%),
+        radial-gradient(ellipse 70% 50% at 20% 70%, #4B3EC7 0%, transparent 55%),
+        radial-gradient(ellipse 55% 45% at 50% 55%, #6B5FD4 0%, transparent 50%),
+        radial-gradient(ellipse 40% 30% at 70% 40%, #9080DC 0%, transparent 60%),
+        radial-gradient(ellipse 60% 30% at 10% 90%, #0A0840 0%, transparent 60%);
+    }
+
+    /* Grain overlay */
+    .left-panel::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.17;
+      mix-blend-mode: overlay;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* All direct content children sit above grain */
+    .left-panel > * {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Branding — top left */
+    .brand {
+      padding: 40px 0 0 40px;
+    }
+
+    .brand-name {
+      font-size: 34px;
+      font-weight: 800;
+      color: #4B3EC7;
+      letter-spacing: -0.5px;
+    }
+
+    .brand-tagline {
+      font-size: 16px;
+      font-weight: 400;
+      color: #2D2D2D;
+      margin-top: 6px;
+    }
+
+    /* Body copy — mid-left on dark gradient area */
+    .left-body {
+      padding-left: 40px;
+      max-width: 420px;
+      /* push it to roughly 55% down — use margin-top via flex spacer */
+      margin-bottom: auto;
+      padding-top: 0;
+    }
+
+    .left-body p {
+      font-style: italic;
+      font-size: 15px;
+      line-height: 1.65;
+      color: #FFFFFF;
+      font-weight: 400;
+    }
+
+    /* Spacer to push body copy to ~55-60% vertically */
+    .left-spacer {
+      flex: 1;
+      min-height: 0;
+    }
+
+    /* Footer links — bottom left */
+    .left-footer {
+      padding: 0 0 36px 40px;
+      display: flex;
+      gap: 32px;
+    }
+
+    .left-footer a {
+      font-size: 13px;
+      color: #FFFFFF;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+      font-weight: 400;
+    }
+
+    /* ─── Right Panel ────────────────────────── */
+    .right-panel {
+      width: 38%;
+      height: 100%;
+      background: #FFFFFF;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: space-between;
+      padding: 60px 40px 40px 40px;
+    }
+
+    .form-wrapper {
+      width: 100%;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    /* Sign In heading */
+    .form-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: #111111;
+      letter-spacing: -1px;
+      margin-bottom: 32px;
+    }
+
+    /* Inputs */
+    .form-input {
+      width: 100%;
+      height: 56px;
+      border: 1.5px solid #E8E8E8;
+      border-radius: 12px;
+      padding: 0 18px;
+      font-size: 15px;
+      color: #111111;
+      outline: none;
+      transition: border-color 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .form-input::placeholder {
+      color: #ADADAD;
+    }
+
+    .form-input:focus {
+      border-color: #6B5FD4;
+      box-shadow: 0 0 0 3px rgba(107, 95, 212, 0.12);
+    }
+
+    .input-email {
+      background: #F2F2F2;
+      margin-bottom: 14px;
+    }
+
+    .input-password {
+      background: #F5F3FA;
+      margin-bottom: 22px;
+    }
+
+    /* Continue button */
+    .btn-continue {
+      width: 100%;
+      height: 56px;
+      background: linear-gradient(135deg, #7B6FE0 0%, #5B4BD4 50%, #4B3EC7 100%);
+      border-radius: 12px;
+      border: none;
+      color: #FFFFFF;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      cursor: pointer;
+      position: relative;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .btn-continue:hover {
+      opacity: 0.92;
+      transform: translateY(-1px);
+    }
+
+    .continue-arrow {
+      position: absolute;
+      right: 16px;
+      width: 32px;
+      height: 32px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .continue-arrow svg {
+      width: 16px;
+      height: 16px;
+      fill: none;
+      stroke: #FFFFFF;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    /* Secondary buttons row */
+    .btn-row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn-secondary {
+      flex: 1;
+      height: 46px;
+      border: 2px solid #6B5FD4;
+      border-radius: 12px;
+      color: #6B5FD4;
+      background: transparent;
+      font-size: 13.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.18s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(107, 95, 212, 0.06);
+    }
+
+    /* Bottom disclaimer */
+    .panel-footer {
+      text-align: center;
+      font-size: 12.5px;
+      color: #B0B0B0;
+      line-height: 1.6;
+      max-width: 340px;
+      margin: 0 auto;
+      padding-bottom: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hidden SVG for grain filter reference (kept for completeness) -->
+  <svg width="0" height="0" style="position:absolute">
+    <defs>
+      <filter id="grain-filter" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence
+          type="fractalNoise"
+          baseFrequency="0.65"
+          numOctaves="3"
+          stitchTiles="stitch"
+          result="noise"
+        />
+        <feColorMatrix type="saturate" values="0" in="noise" result="grayNoise"/>
+        <feBlend in="SourceGraphic" in2="grayNoise" mode="overlay" result="blend"/>
+        <feComposite in="blend" in2="SourceGraphic" operator="in"/>
+      </filter>
+    </defs>
+  </svg>
+
+  <div class="container">
+
+    <!-- ── Left Panel ── -->
+    <div class="left-panel">
+
+      <!-- Branding -->
+      <div class="brand">
+        <div class="brand-name">IVF Community</div>
+        <div class="brand-tagline">Find your people.</div>
+      </div>
+
+      <!-- Flex spacer pushes body copy down ~55% -->
+      <div class="left-spacer"></div>
+
+      <!-- Body copy sits on the dark gradient region -->
+      <div class="left-body">
+        <p>
+          IVFC is a community of women suffering from the after-effects of the IVF
+          treatment and program, enabling you to connect with other people going through
+          the same problems and help each other out.
+        </p>
+      </div>
+
+      <!-- Footer links -->
+      <div class="left-footer">
+        <a href="#">Reach Out</a>
+        <a href="#">About Us</a>
+      </div>
+
+    </div>
+
+    <!-- ── Right Panel ── -->
+    <div class="right-panel">
+
+      <div class="form-wrapper">
+        <h1 class="form-title">Sign In</h1>
+
+        <input
+          class="form-input input-email"
+          type="email"
+          placeholder="Email Address"
+          autocomplete="email"
+        />
+
+        <input
+          class="form-input input-password"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+        />
+
+        <button class="btn-continue" type="button">
+          Continue
+          <span class="continue-arrow">
+            <svg viewBox="0 0 24 24">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </span>
+        </button>
+
+        <div class="btn-row">
+          <button class="btn-secondary" type="button">Create an account</button>
+          <button class="btn-secondary" type="button">Forgot Password</button>
+        </div>
+      </div>
+
+      <p class="panel-footer">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
+        tempor incididunt ut labore
+      </p>
+
+    </div>
+
+  </div>
+
+</body>
+</html>
