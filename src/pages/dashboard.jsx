@@ -4,7 +4,7 @@ import Home from './home'
 import Learn from './learn'
 import Matches from './matches'
 import Community from './community'
-import Unwind from './unwind'
+import Unwind, { INITIAL_UNWIND_STATE } from './unwind'
 
 // Reads the same localStorage keys that matches.jsx writes
 function getLastRead(myId, otherId) {
@@ -12,9 +12,12 @@ function getLastRead(myId, otherId) {
 }
 
 export default function Dashboard({ session }) {
-  const [activeTab, setActiveTab] = useState('home')
-  const [userId, setUserId]       = useState(null)
-  const [hasUnread, setHasUnread] = useState(false)
+  const [activeTab, setActiveTab]   = useState('home')
+  const [userId, setUserId]         = useState(null)
+  const [hasUnread, setHasUnread]   = useState(false)
+
+  // Unwind state lifted here so it survives tab switches
+  const [unwindState, setUnwindState] = useState(INITIAL_UNWIND_STATE)
 
   // Get the logged-in user's ID once
   useEffect(() => {
@@ -28,7 +31,6 @@ export default function Dashboard({ session }) {
   // Check for unread messages whenever userId is set or tab changes
   useEffect(() => {
     if (!userId) return
-    // Clear badge when user goes to Match tab (the toggle inside will handle it)
     if (activeTab === 'match') { setHasUnread(false); return }
     checkUnreads()
   }, [userId, activeTab])
@@ -60,7 +62,7 @@ export default function Dashboard({ session }) {
       case 'learn':     return <Learn />
       case 'match':     return <Matches session={session} />
       case 'community': return <Community />
-      case 'unwind':    return <Unwind />
+      case 'unwind':    return <Unwind state={unwindState} onStateChange={setUnwindState} />
       default:          return <Home session={session} />
     }
   }
@@ -145,24 +147,12 @@ export default function Dashboard({ session }) {
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
               style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px 0 14px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 4, position: 'relative' }}>
-
-              {/* Icon with unread dot */}
               <div style={{ position: 'relative', display: 'inline-flex' }}>
                 {tab.icon(active)}
                 {showBadge && (
-                  <div style={{
-                    position:  'absolute',
-                    top:       -2,
-                    right:     -2,
-                    width:     9,
-                    height:    9,
-                    borderRadius: '50%',
-                    background:  'var(--accent)',
-                    border:      '2px solid var(--sidebar)',
-                  }} />
+                  <div style={{ position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--sidebar)' }} />
                 )}
               </div>
-
               <span style={{ fontSize: 11, color: active ? 'var(--accent)' : 'var(--text)', fontWeight: active ? 600 : 400 }}>
                 {tab.label}
               </span>
