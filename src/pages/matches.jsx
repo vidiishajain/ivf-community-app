@@ -182,7 +182,8 @@ export default function Matches() {
       const { data: me } = await supabase.from('profiles').select('*').eq('id', user.id).single()
       setCurrentProfile(me)
       const { data: everyone } = await supabase.from('profiles').select('*').neq('id', user.id)
-      setMatches(getMatches(me, everyone || []).slice(0, 5))
+      const valid = (everyone || []).filter(p => p.display_name && p.feature_vec)
+setMatches(getMatches(me, valid).slice(0, 5))
       const { data: conns } = await supabase.from('connections').select('receiver_id').eq('requester_id', user.id)
       if (conns) { const m = {}; conns.forEach(c => { m[c.receiver_id] = true }); setConnections(m) }
       const { data: existingRatings } = await supabase.from('connection_feedback').select('reviewed_id').eq('reviewer_id', user.id)
