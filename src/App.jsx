@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import Auth from './pages/Auth'
-import Disclaimer from './pages/Disclaimer'
-import Questionnaire from './pages/Questionnaire'
-import Dashboard from './pages/Dashboard'
+import Auth from './pages/auth'
+import Disclaimer from './pages/disclaimer'
+import Questionnaire from './pages/questionnaire'
+import Dashboard from './pages/dashboard'
 
 function App() {
   const [session, setSession] = useState(null)

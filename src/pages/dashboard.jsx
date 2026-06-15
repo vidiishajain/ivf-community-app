@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
-import Learn from './Learn'
-import Matches from './Matches'
-import Community from './Community'
-import Unwind from './Unwind'
+import Learn from './learn'
+import Matches from './matches'
+import Community from './community'
+import Unwind from './unwind'
 
 export default function Dashboard({ session }) {
   const [activeTab, setActiveTab] = useState('match')
