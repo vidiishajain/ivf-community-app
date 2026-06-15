@@ -4,6 +4,7 @@ import { getMatches } from '../lib/matching'
 import ConnectionFeedback from './ConnectionFeedback'
 
 const AVATAR_COLORS = ['#C084A0','#9B8EC4','#6BA4A0','#C4A76E','#7AAB8A','#8AAAC4']
+
 function getAvatarColor(name) {
   const n = name ?? ''
   if (!n) return AVATAR_COLORS[0]
@@ -21,17 +22,41 @@ const STAGE_LABELS = {
   7:'Embryo development', 8:'Transfer preparation', 9:'Embryo transfer',
   10:'Two-week wait', 11:'Awaiting results', 12:'Reflection & recovery',
 }
-
 const PERSONA_PHRASES = {
   1:'finds comfort in open, honest conversations',
   2:'appreciates practical advice and clear answers',
   3:'loves connecting through shared stories',
   4:'values quiet understanding over advice',
 }
-
 const PATHWAY_CONTEXT = {
   1:'natural IVF protocol', 2:'standard IVF cycle',
   3:'donor egg pathway', 4:'freeze-all cycle',
+}
+const PATHWAY_LABELS = {
+  1: 'NHS funded', 2: 'Privately funded', 3: 'NHS & private', 4: 'International clinic',
+}
+const ROUND_LABELS = {
+  1: '1st round', 2: '2nd round', 3: '3rd round', 4: '4th round or more',
+}
+const HOBBY_LABELS = {
+  exercise:   'exercise',
+  creative:   'creative activities',
+  nature:     'being in nature',
+  meditation: 'meditation',
+  social:     'socialising',
+}
+
+function getRound(featureVec) {
+  if (!featureVec || !Array.isArray(featureVec) || featureVec.length < 4) return null
+  const raw = featureVec[3]
+  if (raw === null || raw === undefined) return null
+  const rounded = Math.round(raw * 4)
+  return rounded > 0 ? rounded : null
+}
+
+function getSharedHobbies(myHobbies, theirHobbies) {
+  if (!myHobbies || !theirHobbies) return []
+  return myHobbies.filter(h => theirHobbies.includes(h))
 }
 
 function getSmartLine(profile) {
@@ -42,7 +67,6 @@ function getSmartLine(profile) {
   if (persona)            return `${firstName} ${persona}.`
   return null
 }
-
 function matchLabel(pct) {
   if (pct >= 92) return 'Remarkably close match'
   if (pct >= 85) return 'Very strong match'
@@ -56,14 +80,13 @@ function ChatView({ profile, onBack }) {
   const color     = getAvatarColor(profile.display_name)
   const ini       = getInitials(profile.display_name)
   const [messages, setMessages] = useState([
-    { id: 1, from: 'them', text: `Hi! I saw we matched — it\'s really nice to connect with someone at the same stage 🌸`, time: 'just now' }
+    { id: 1, from: 'them', text: `Hi! I saw we matched — it's really nice to connect with someone at the same stage 🌸`, time: 'just now' }
   ])
-  const [input, setInput]         = useState('')
-  const bottomRef                 = useRef(null)
-  const inputRef                  = useRef(null)
+  const [input, setInput]               = useState('')
+  const bottomRef                       = useRef(null)
+  const inputRef                        = useRef(null)
   const [bottomOffset, setBottomOffset] = useState(68)
 
-  // Adjust input position when keyboard opens on mobile
   useEffect(() => {
     if (!window.visualViewport) return
     function onViewportChange() {
@@ -91,73 +114,35 @@ function ChatView({ profile, onBack }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-
-      <div style={{
-        padding: '16px 20px', borderBottom: '1px solid var(--border)',
-        background: 'var(--sidebar)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0,
-      }}>
+      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--sidebar)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0 }}>
         <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: '22px' }}>←</button>
-        <div style={{
-          width: '38px', height: '38px', borderRadius: '50%', background: color,
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          fontSize: '14px', fontWeight: '700', color: '#fff', flexShrink: 0,
-        }}>{ini}</div>
+        <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px', fontWeight: '700', color: '#fff', flexShrink: 0 }}>{ini}</div>
         <div>
           <p style={{ color: 'var(--text-h)', fontSize: '15px', fontWeight: '600', margin: 0 }}>{profile.display_name}</p>
           <p style={{ color: 'var(--text)', fontSize: '11px', opacity: 0.5, margin: 0 }}>Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}</p>
         </div>
       </div>
-
       <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: `${bottomOffset + 60}px` }}>
         {messages.map(msg => {
           const isMe = msg.from === 'me'
           return (
             <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: '14px' }}>
-              {!isMe && (
-                <div style={{
-                  width: '32px', height: '32px', borderRadius: '50%', background: color,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0, marginRight: '8px', alignSelf: 'flex-end',
-                }}>{ini}</div>
-              )}
-              <div style={{
-                maxWidth: '72%', padding: '10px 14px',
-                borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                background: isMe ? 'var(--accent)' : 'var(--code-bg)',
-                border: isMe ? 'none' : '1px solid var(--border)',
-              }}>
-                <p style={{ color: isMe ? '#fff' : 'var(--text-h)', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>
-                  {msg.text}
-                </p>
+              {!isMe && <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: '700', color: '#fff', flexShrink: 0, marginRight: '8px', alignSelf: 'flex-end' }}>{ini}</div>}
+              <div style={{ maxWidth: '72%', padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMe ? 'var(--accent)' : 'var(--code-bg)', border: isMe ? 'none' : '1px solid var(--border)' }}>
+                <p style={{ color: isMe ? '#fff' : 'var(--text-h)', fontSize: '14px', lineHeight: '1.5', margin: 0 }}>{msg.text}</p>
               </div>
             </div>
           )
         })}
         <div ref={bottomRef} />
       </div>
-
-      <div style={{
-        position: 'fixed', left: 0, right: 0, bottom: `${bottomOffset}px`,
-        padding: '12px 16px', background: 'var(--sidebar)', borderTop: '1px solid var(--border)',
-        display: 'flex', gap: '10px',
-        transition: 'bottom 0.15s ease',
-      }}>
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={e => setInput(e.target.value)}
+      <div style={{ position: 'fixed', left: 0, right: 0, bottom: `${bottomOffset}px`, padding: '12px 16px', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', display: 'flex', gap: '10px', transition: 'bottom 0.15s ease' }}>
+        <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 350)}
           placeholder={`Message ${firstName}...`}
-          style={{
-            flex: 1, background: 'var(--code-bg)', border: '1px solid var(--border)',
-            borderRadius: '10px', padding: '10px 14px', color: 'var(--text-h)', fontSize: '14px', outline: 'none',
-          }}
-        />
-        <button onClick={send} style={{
-          background: 'var(--accent)', border: 'none', color: '#fff',
-          borderRadius: '10px', padding: '10px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: '600',
-        }}>Send</button>
+          style={{ flex: 1, background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '10px', padding: '10px 14px', color: 'var(--text-h)', fontSize: '14px', outline: 'none' }} />
+        <button onClick={send} style={{ background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: '10px', padding: '10px 18px', cursor: 'pointer', fontSize: '13px', fontWeight: '600' }}>Send</button>
       </div>
     </div>
   )
@@ -183,7 +168,7 @@ export default function Matches() {
       setCurrentProfile(me)
       const { data: everyone } = await supabase.from('profiles').select('*').neq('id', user.id)
       const valid = (everyone || []).filter(p => p.display_name && p.feature_vec)
-setMatches(getMatches(me, valid).slice(0, 5))
+      setMatches(getMatches(me, valid).slice(0, 5))
       const { data: conns } = await supabase.from('connections').select('receiver_id').eq('requester_id', user.id)
       if (conns) { const m = {}; conns.forEach(c => { m[c.receiver_id] = true }); setConnections(m) }
       const { data: existingRatings } = await supabase.from('connection_feedback').select('reviewed_id').eq('reviewer_id', user.id)
@@ -196,14 +181,9 @@ setMatches(getMatches(me, valid).slice(0, 5))
     setConnecting(prev => ({ ...prev, [profileId]: true }))
     try {
       const { data: { user } } = await supabase.auth.getUser()
-      const { data: existing } = await supabase
-        .from('connections')
-        .select('id')
+      const { data: existing } = await supabase.from('connections').select('id')
         .or(`and(requester_id.eq.${user.id},receiver_id.eq.${profileId}),and(requester_id.eq.${profileId},receiver_id.eq.${user.id})`)
-      if (existing && existing.length > 0) {
-        setConnections(prev => ({ ...prev, [profileId]: true }))
-        return
-      }
+      if (existing && existing.length > 0) { setConnections(prev => ({ ...prev, [profileId]: true })); return }
       await supabase.from('connections').insert({ requester_id: user.id, receiver_id: profileId, status: 'accepted' })
       setConnections(prev => ({ ...prev, [profileId]: true }))
     } catch (e) { console.error('Connect error:', e) }
@@ -223,7 +203,8 @@ setMatches(getMatches(me, valid).slice(0, 5))
 
   if (chatTarget) return <ChatView profile={chatTarget} onBack={() => setChatTarget(null)} />
   if (feedbackTarget) return (
-    <ConnectionFeedback reviewedId={feedbackTarget.id}
+    <ConnectionFeedback
+      reviewedId={feedbackTarget.id}
       onDone={() => { setRated(p => ({...p, [feedbackTarget.id]: true})); setFeedbackTarget(null) }}
       onBack={() => setFeedbackTarget(null)} />
   )
@@ -259,19 +240,26 @@ setMatches(getMatches(me, valid).slice(0, 5))
         const smartLine    = getSmartLine(profile)
         const sameStage    = currentProfile?.ivf_stage === profile.ivf_stage
 
+        // New humanised data
+        const round         = getRound(profile.feature_vec)
+        const roundLabel    = ROUND_LABELS[round] || null
+        const pathwayLabel  = PATHWAY_LABELS[profile.pathway] || null
+        const fundingRoundLine = [pathwayLabel, roundLabel].filter(Boolean).join(' · ')
+
+        const sharedHobbies = getSharedHobbies(currentProfile?.hobbies_vec, profile.hobbies_vec)
+        const hobbyNames    = sharedHobbies.slice(0, 2).map(h => HOBBY_LABELS[h] || h)
+        const hobbyLine     = hobbyNames.length > 0
+          ? `You both unwind through ${hobbyNames.join(' and ')}`
+          : null
+
+        const hasHighlightBox = sameStage || smartLine || hobbyLine
+
         return (
-          <div key={profile.id} className="match-card-anim" style={{
-            background: 'var(--code-bg)', border: '1px solid var(--border)',
-            borderRadius: '18px', padding: '20px', marginBottom: '16px',
-            animationDelay: `${i * 0.07}s`,
-          }}>
+          <div key={profile.id} className="match-card-anim" style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: '18px', padding: '20px', marginBottom: '16px', animationDelay: `${i * 0.07}s` }}>
+
+            {/* Avatar + name + stage */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '16px' }}>
-              <div style={{
-                width: '64px', height: '64px', borderRadius: '50%', background: color,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: '22px', fontWeight: '700', color: '#fff', flexShrink: 0,
-                boxShadow: `0 0 0 3px ${color}55`,
-              }}>{ini}</div>
+              <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', fontWeight: '700', color: '#fff', flexShrink: 0, boxShadow: `0 0 0 3px ${color}55` }}>{ini}</div>
               <div>
                 <p className="card-name" style={{ marginBottom: '3px', fontSize: '17px' }}>
                   {profile.display_name}{profile.age ? `, ${profile.age}` : ''}
@@ -279,49 +267,61 @@ setMatches(getMatches(me, valid).slice(0, 5))
                 <p style={{ color: 'var(--text)', fontSize: '12px', opacity: 0.6, margin: 0 }}>
                   Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}
                 </p>
+                {/* NEW: Funding + Round */}
+                {fundingRoundLine ? (
+                  <p style={{ color: 'var(--text)', fontSize: '11px', opacity: 0.45, margin: '3px 0 0' }}>
+                    {fundingRoundLine}
+                  </p>
+                ) : null}
               </div>
             </div>
 
+            {/* Match quality label */}
             <span style={{ fontSize: '11px', fontWeight: '700', letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>
               ✦ {matchLabel(pct)}
             </span>
 
-            {(smartLine || sameStage) && (
+            {/* Highlight box: same stage + smart line + shared hobbies */}
+            {hasHighlightBox && (
               <div style={{ background: 'var(--border)', borderRadius: '10px', borderLeft: `3px solid ${color}`, padding: '10px 14px', margin: '12px 0' }}>
-                {sameStage && <p style={{ color: 'var(--text)', fontSize: '12px', opacity: 0.75, margin: '0 0 4px', fontWeight: '500' }}>You are both at the same stage of your journey.</p>}
-                {smartLine && <p style={{ color: 'var(--text)', fontSize: '13px', opacity: 0.85, margin: 0, fontStyle: 'italic' }}>"{smartLine}"</p>}
+                {sameStage && (
+                  <p style={{ color: 'var(--text)', fontSize: '12px', opacity: 0.75, margin: '0 0 4px', fontWeight: '500' }}>
+                    You are both at the same stage of your journey.
+                  </p>
+                )}
+                {smartLine && (
+                  <p style={{ color: 'var(--text)', fontSize: '13px', opacity: 0.85, margin: sameStage ? '4px 0 0' : 0, fontStyle: 'italic' }}>
+                    "{smartLine}"
+                  </p>
+                )}
+                {/* NEW: Shared hobbies */}
+                {hobbyLine && (
+                  <p style={{ color: 'var(--text)', fontSize: '13px', opacity: 0.85, margin: (sameStage || smartLine) ? '6px 0 0' : 0 }}>
+                    🌿 {hobbyLine}
+                  </p>
+                )}
               </div>
             )}
 
             <div style={{ height: '1px', background: 'var(--border)', margin: '14px 0' }} />
 
+            {/* Action buttons */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               {hasRated ? (
                 <span style={{ fontSize: '13px', color: 'var(--accent)', fontWeight: '600' }}>Rated ✓</span>
               ) : connected ? (
                 <div style={{ display: 'flex', gap: '8px', flex: 1 }}>
-                  <button onClick={() => setChatTarget(profile)} style={{
-                    flex: 1, padding: '10px 16px', background: 'var(--accent)', border: 'none',
-                    color: '#fff', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '600',
-                  }}>
+                  <button onClick={() => setChatTarget(profile)} style={{ flex: 1, padding: '10px 16px', background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: '12px', cursor: 'pointer', fontSize: '14px', fontWeight: '600' }}>
                     💬 Message {profile.display_name.split(' ')[0]}
                   </button>
                   {!hasRated && (
-                    <button onClick={() => setFeedbackTarget(profile)} style={{
-                      padding: '10px 14px', background: 'none', border: '1px solid var(--border)',
-                      color: 'var(--text)', borderRadius: '12px', cursor: 'pointer', fontSize: '13px',
-                    }}>Rate</button>
+                    <button onClick={() => setFeedbackTarget(profile)} style={{ padding: '10px 14px', background: 'none', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: '12px', cursor: 'pointer', fontSize: '13px' }}>
+                      Rate
+                    </button>
                   )}
                 </div>
               ) : (
-                <button onClick={() => handleConnect(profile.id)} disabled={isConnecting} style={{
-                  flex: 1, padding: '10px 16px',
-                  background: isConnecting ? 'var(--border)' : 'var(--accent)',
-                  border: 'none', color: '#fff', borderRadius: '12px',
-                  cursor: isConnecting ? 'not-allowed' : 'pointer',
-                  fontSize: '14px', fontWeight: '600', opacity: isConnecting ? 0.7 : 1,
-                  transition: 'opacity 0.2s',
-                }}>
+                <button onClick={() => handleConnect(profile.id)} disabled={isConnecting} style={{ flex: 1, padding: '10px 16px', background: isConnecting ? 'var(--border)' : 'var(--accent)', border: 'none', color: '#fff', borderRadius: '12px', cursor: isConnecting ? 'not-allowed' : 'pointer', fontSize: '14px', fontWeight: '600', opacity: isConnecting ? 0.7 : 1, transition: 'opacity 0.2s' }}>
                   {isConnecting ? 'Connecting…' : 'Request to connect'}
                 </button>
               )}
@@ -330,6 +330,7 @@ setMatches(getMatches(me, valid).slice(0, 5))
                 <button onClick={() => handleThumbsDown(profile.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '20px', padding: '4px' }}>👎</button>
               </div>
             </div>
+
           </div>
         )
       })}
