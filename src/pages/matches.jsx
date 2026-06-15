@@ -4,8 +4,16 @@ import { getMatches } from '../lib/matching'
 import ConnectionFeedback from './ConnectionFeedback'
 
 const AVATAR_COLORS = ['#C084A0','#9B8EC4','#6BA4A0','#C4A76E','#7AAB8A','#8AAAC4']
-function getAvatarColor(name = '') { return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length] }
-function getInitials(name = '') { return name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() }
+function getAvatarColor(name) {
+  const n = name ?? ''
+  if (!n) return AVATAR_COLORS[0]
+  return AVATAR_COLORS[n.charCodeAt(0) % AVATAR_COLORS.length]
+}
+function getInitials(name) {
+  const n = name ?? ''
+  if (!n) return '?'
+  return n.split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase()
+}
 
 const STAGE_LABELS = {
   1:'Beginning the journey', 2:'Initial consultations', 3:'Preparing for treatment',
