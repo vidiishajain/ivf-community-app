@@ -115,8 +115,8 @@ function App() {
 
   if (isResetting)           return <ResetPassword />
   if (!session)              return <Auth />
-  if (!profile?.consent)     return <Disclaimer session={session} />
-  if (!profile?.feature_vec) return <Questionnaire session={session} onComplete={() => fetchProfile(session.user.id)} />
+  if (!profile?.consent)     return <Disclaimer session={session} onComplete={() => fetchProfile(session.user.id)} />
+  if (!profile?.feature_vec?.length) return <Questionnaire session={session} onComplete={() => fetchProfile(session.user.id)} />
   return <Dashboard session={session} />
 }
 

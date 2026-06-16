@@ -12,7 +12,7 @@ function getLastRead(myId, otherId) {
 }
 
 export default function Dashboard({ session }) {
-  const [activeTab, setActiveTab]   = useState('learn')
+  const [activeTab, setActiveTab]   = useState('home')
   const [userId, setUserId]         = useState(null)
   const [hasUnread, setHasUnread]   = useState(false)
   const [firstName, setFirstName]   = useState('')
@@ -80,11 +80,21 @@ export default function Dashboard({ session }) {
       case 'match':     return <Matches session={session} />
       case 'community': return <Community />
       case 'unwind':    return <Unwind state={unwindState} onStateChange={setUnwindState} />
-      default:          return <Learn />
+      default:          return <Home session={session} />
     }
   }
 
   const navItems = [
+    {
+      id: 'home',
+      label: 'Home',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5z"/>
+          <path d="M9 21V12h6v9"/>
+        </svg>
+      ),
+    },
     {
       id: 'learn',
       label: 'Learn',
@@ -258,7 +268,7 @@ export default function Dashboard({ session }) {
         flex: 1,
         height: '100vh',
         overflowY: 'auto',
-        background: '#F9F9FB',
+        background: '#FFFFFF',
         position: 'relative',
       }}>
         <button
