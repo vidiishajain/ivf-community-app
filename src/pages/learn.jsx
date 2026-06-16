@@ -1,4 +1,13 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
+import { motion } from 'framer-motion'
+import { useSpring, animated } from '@react-spring/web'
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+gsap.registerPlugin(ScrollTrigger)
+
+const FONT = "'Quicksand', system-ui, sans-serif"
 
 const ARTICLES = [
   {
@@ -43,13 +52,17 @@ const ARTICLES = [
   },
 ]
 
+// ── React Spring hover card ───────────────────────────────────────────────────
+
 function ArticleCard({ article }) {
-  const [hovered, setHovered] = useState(false)
+  const [springs, api] = useSpring(() => ({
+    scale: 1,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    config: { tension: 300, friction: 20 },
+  }))
 
   return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+    <animated.div
       style={{
         background: '#FFFFFF',
         border: '1.5px solid #EBEBEB',
@@ -58,10 +71,12 @@ function ArticleCard({ article }) {
         display: 'flex',
         flexDirection: 'column',
         gap: 12,
-        transition: 'box-shadow 0.18s ease',
-        boxShadow: hovered ? '0 4px 20px rgba(0,0,0,0.07)' : 'none',
-        fontFamily: "'Inter', system-ui, sans-serif",
+        fontFamily: FONT,
+        scale: springs.scale,
+        boxShadow: springs.boxShadow,
       }}
+      onMouseEnter={() => api.start({ scale: 1.015, boxShadow: '0 8px 24px rgba(0,0,0,0.09)' })}
+      onMouseLeave={() => api.start({ scale: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' })}
     >
       {/* Category pill */}
       <span style={{
@@ -71,10 +86,11 @@ function ArticleCard({ article }) {
         color: article.color.text,
         fontSize: 10,
         fontWeight: 700,
-        letterSpacing: '0.8px',
+        letterSpacing: '0.6px',
         textTransform: 'uppercase',
         padding: '5px 12px',
         borderRadius: 999,
+        fontFamily: FONT,
       }}>
         {article.category}
       </span>
@@ -87,6 +103,7 @@ function ArticleCard({ article }) {
         lineHeight: 1.35,
         letterSpacing: '-0.2px',
         margin: 0,
+        fontFamily: FONT,
       }}>
         {article.title}
       </p>
@@ -98,27 +115,20 @@ function ArticleCard({ article }) {
         lineHeight: 1.65,
         flex: 1,
         margin: 0,
+        fontWeight: 500,
+        fontFamily: FONT,
       }}>
         {article.description}
       </p>
 
       {/* Footer */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 'auto',
-      }}>
-        <span style={{
-          fontSize: 12.5,
-          color: '#9E9E9E',
-          fontWeight: 400,
-        }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+        <span style={{ fontSize: 12.5, color: '#9E9E9E', fontWeight: 400, fontFamily: FONT }}>
           {article.readTime}
         </span>
         <ReadMoreLink url={article.url} color={article.color.readMore} />
       </div>
-    </div>
+    </animated.div>
   )
 }
 
@@ -136,6 +146,7 @@ function ReadMoreLink({ url, color }) {
         fontWeight: 600,
         color,
         textDecoration: hovered ? 'underline' : 'none',
+        fontFamily: FONT,
       }}
     >
       Read More
@@ -143,78 +154,113 @@ function ReadMoreLink({ url, color }) {
   )
 }
 
+// ── View More button ─────────────────────────────────────────────────────────
+
 function ViewMoreButton() {
   const [hovered, setHovered] = useState(false)
   return (
     <div style={{ marginTop: 40, display: 'flex', justifyContent: 'center' }}>
-      <button
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: 12,
-          background: hovered ? 'rgba(107, 95, 212, 0.6)' : 'rgba(107, 95, 212, 0.45)',
-          color: '#FFFFFF',
-          fontSize: 14,
-          fontWeight: 600,
-          padding: '14px 24px',
-          borderRadius: 999,
-          border: 'none',
-          cursor: 'pointer',
-          letterSpacing: '0.1px',
-          transition: 'background 0.18s ease',
-          fontFamily: "'Inter', system-ui, sans-serif",
-        }}
-      >
-        View More Resources
-        <span style={{
-          width: 28,
-          height: 28,
-          background: 'rgba(255,255,255,0.3)',
-          borderRadius: '50%',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <line x1="5" y1="12" x2="19" y2="12"/>
-            <polyline points="12 5 19 12 12 19"/>
-          </svg>
-        </span>
-      </button>
+      <motion.div whileTap={{ scale: 0.96 }} whileHover={{ scale: 1.03 }}>
+        <button
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 12,
+            background: hovered ? 'rgba(107, 95, 212, 0.6)' : 'rgba(107, 95, 212, 0.45)',
+            color: '#FFFFFF',
+            fontSize: 14,
+            fontWeight: 600,
+            padding: '14px 24px',
+            borderRadius: 999,
+            border: 'none',
+            cursor: 'pointer',
+            letterSpacing: '0.1px',
+            transition: 'background 0.18s ease',
+            fontFamily: FONT,
+          }}
+        >
+          View More Resources
+          <span style={{
+            width: 28,
+            height: 28,
+            background: 'rgba(255,255,255,0.3)',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
+          </span>
+        </button>
+      </motion.div>
     </div>
   )
 }
 
+// ── Main export ──────────────────────────────────────────────────────────────
+
 export default function Learn() {
+  const headingRef = useRef(null)
+
+  useGSAP(() => {
+    if (!headingRef.current) return
+    gsap.from(headingRef.current, {
+      opacity: 0,
+      y: -16,
+      duration: 0.45,
+      ease: 'power3.out',
+    })
+  }, [])
+
   return (
     <div style={{
+      flex: 1,
+      overflowY: 'auto',
       padding: '48px 48px 60px 48px',
       background: '#FFFFFF',
-      minHeight: '100%',
-      fontFamily: "'Inter', system-ui, sans-serif",
+      fontFamily: FONT,
     }}>
-      <h1 style={{
-        fontSize: 36,
-        fontWeight: 800,
-        color: '#111111',
-        letterSpacing: '-0.8px',
-        marginBottom: 32,
-        margin: '0 0 32px 0',
-      }}>
+      <h1
+        ref={headingRef}
+        style={{
+          fontSize: 36,
+          fontWeight: 700,
+          color: '#111111',
+          letterSpacing: '-0.5px',
+          margin: '0 0 32px 0',
+          fontFamily: FONT,
+        }}
+      >
         Learn
       </h1>
 
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: 20,
-      }}>
+      {/* Staggered card grid */}
+      <motion.div
+        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
+        initial="hidden"
+        animate="visible"
+        variants={{
+          hidden: {},
+          visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+        }}
+      >
         {ARTICLES.map(article => (
-          <ArticleCard key={article.id} article={article} />
+          <motion.div
+            key={article.id}
+            variants={{
+              hidden: { opacity: 0, y: 20 },
+              visible: { opacity: 1, y: 0, transition: { duration: 0.35, ease: 'easeOut' } },
+            }}
+          >
+            <ArticleCard article={article} />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       <ViewMoreButton />
     </div>

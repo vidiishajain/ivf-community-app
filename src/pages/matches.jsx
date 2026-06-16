@@ -2,6 +2,12 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { getMatches } from '../lib/matching'
 import ConnectionFeedback from './ConnectionFeedback'
+import { motion, AnimatePresence } from 'framer-motion'
+import { useSpring, animated } from '@react-spring/web'
+import { useGSAP } from '@gsap/react'
+import gsap from 'gsap'
+
+const FONT = "'Quicksand', system-ui, sans-serif"
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -33,7 +39,6 @@ function formatTime(timestamp) {
   return date.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
-// Track read state per conversation in localStorage
 function getLastRead(myId, otherId) {
   return localStorage.getItem(`last_read_${myId}_${otherId}`) || null
 }
@@ -82,9 +87,9 @@ const HOBBY_LABELS = {
   social:     'socialising',
 }
 const ICEBREAKERS = [
-  "Hi! It's really nice to connect with someone at a similar stage 🌸 How are you finding things at the moment?",
+  "Hi! It's really nice to connect with someone at a similar stage. How are you finding things at the moment?",
   "Hey! I saw we matched — it feels reassuring to find someone who gets it. How are you doing?",
-  "Hi there 💜 How are you holding up through everything?",
+  "Hi there. How are you holding up through everything?",
   "Hello! It helps so much to talk to someone who actually understands. How's your journey going?",
   "Hi! I'd love to hear how you're navigating all of this.",
 ]
@@ -117,6 +122,26 @@ function matchLabel(pct) {
   return 'Worth connecting'
 }
 
+// ─── ThumbButton — React Spring bounce ───────────────────────────────────────
+
+function ThumbButton({ onClick, children, style }) {
+  const [springs, api] = useSpring(() => ({
+    scale: 1,
+    config: { tension: 400, friction: 12 },
+  }))
+  return (
+    <animated.button
+      style={{ ...style, scale: springs.scale }}
+      onClick={onClick}
+      onMouseDown={() => api.start({ scale: 0.88 })}
+      onMouseUp={() => api.start({ scale: 1 })}
+      onMouseLeave={() => api.start({ scale: 1 })}
+    >
+      {children}
+    </animated.button>
+  )
+}
+
 // ─── ChatView ────────────────────────────────────────────────────────────────
 
 function ChatView({ profile, myId, onBack }) {
@@ -126,12 +151,10 @@ function ChatView({ profile, myId, onBack }) {
   const ini                     = getInitials(profile.display_name)
   const [messages, setMessages] = useState([])
   const [input, setInput]       = useState('')
-  const [loadingMsgs, setLoadingMsgs]   = useState(true)
-  const [bottomOffset, setBottomOffset] = useState(68)
+  const [loadingMsgs, setLoadingMsgs] = useState(true)
   const bottomRef = useRef(null)
   const inputRef  = useRef(null)
 
-  // Load existing messages
   useEffect(() => { loadMessages() }, [])
 
   async function loadMessages() {
@@ -156,49 +179,24 @@ function ChatView({ profile, myId, onBack }) {
     }
   }
 
-  // Realtime subscription — listens for new messages in this conversation
   useEffect(() => {
     if (!myId || !profile?.id) return
-
     const channel = supabase
       .channel(`chat_${[myId, profile.id].sort().join('_')}`)
       .on('postgres_changes', {
-        event:  'INSERT',
-        schema: 'public',
-        table:  'messages',
+        event: 'INSERT', schema: 'public', table: 'messages',
         filter: `receiver_id=eq.${myId}`,
       }, (payload) => {
         const msg = payload.new
         if (msg.sender_id !== profile.id) return
         setMessages(prev => [...prev, {
-          id:   msg.id,
-          from: 'them',
-          text: msg.content,
-          time: formatTime(msg.created_at),
+          id: msg.id, from: 'them', text: msg.content, time: formatTime(msg.created_at),
         }])
         markAsRead(myId, profile.id)
       })
       .subscribe()
-
     return () => { supabase.removeChannel(channel) }
   }, [myId, profile?.id])
-
-  // Keyboard offset for mobile
-  useEffect(() => {
-    if (!window.visualViewport) return
-    function onViewportChange() {
-      const vv = window.visualViewport
-      const keyboardHeight = window.innerHeight - vv.height - vv.offsetTop
-      setBottomOffset(Math.max(68, keyboardHeight + 8))
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100)
-    }
-    window.visualViewport.addEventListener('resize', onViewportChange)
-    window.visualViewport.addEventListener('scroll', onViewportChange)
-    return () => {
-      window.visualViewport.removeEventListener('resize', onViewportChange)
-      window.visualViewport.removeEventListener('scroll', onViewportChange)
-    }
-  }, [])
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
@@ -216,47 +214,43 @@ function ChatView({ profile, myId, onBack }) {
   const showIcebreakers = !loadingMsgs && messages.length === 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden', fontFamily: FONT }}>
       {/* Header */}
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--sidebar)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 22 }}>←</button>
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid #EBEBEB', background: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888888', fontSize: 22 }}>←</button>
         <div style={{ width: 38, height: 38, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{ini}</div>
         <div style={{ flex: 1 }}>
-          <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: 600, margin: 0 }}>{profile.display_name}</p>
-          <p style={{ color: 'var(--text)', fontSize: 11, opacity: 0.5, margin: 0 }}>Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}</p>
+          <p style={{ color: '#111111', fontSize: 15, fontWeight: 600, margin: 0, fontFamily: FONT }}>{profile.display_name}</p>
+          <p style={{ color: '#888888', fontSize: 11, margin: 0, fontFamily: FONT }}>Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}</p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
-          <span style={{ fontSize: 11, color: 'var(--text)', opacity: 0.5 }}>Live</span>
+          <span style={{ fontSize: 11, color: '#888888', fontFamily: FONT }}>Live</span>
         </div>
       </div>
 
       {/* Messages */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: `${bottomOffset + 60}px` }}>
-
+      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
         {loadingMsgs && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <p style={{ color: 'var(--text)', opacity: 0.5, fontSize: 14 }}>Loading…</p>
+            <p style={{ color: '#888888', fontSize: 14, fontFamily: FONT }}>Loading…</p>
           </div>
         )}
-
         {showIcebreakers && (
           <div style={{ marginBottom: 24 }}>
-            <p style={{ color: 'var(--text)', fontSize: 12, opacity: 0.55, marginBottom: 12, textAlign: 'center' }}>
-              You're connected 🌸 Start the conversation:
+            <p style={{ color: '#888888', fontSize: 12, marginBottom: 12, textAlign: 'center', fontFamily: FONT }}>
+              You're connected. Start the conversation:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {ICEBREAKERS.slice(0, 3).map((ic, i) => (
                 <button key={i} onClick={() => setInput(ic)}
-                  style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 13, textAlign: 'left', cursor: 'pointer', lineHeight: 1.55 }}>
+                  style={{ background: '#F7F7FA', border: '1px solid #EBEBEB', borderRadius: 12, padding: '12px 14px', color: '#555555', fontSize: 13, textAlign: 'left', cursor: 'pointer', lineHeight: 1.55, fontFamily: FONT }}>
                   {ic}
                 </button>
               ))}
             </div>
           </div>
         )}
-
         {messages.map(msg => {
           const isMe = msg.from === 'me'
           return (
@@ -264,11 +258,11 @@ function ChatView({ profile, myId, onBack }) {
               {!isMe && (
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0, marginRight: 8, alignSelf: 'flex-end' }}>{ini}</div>
               )}
-              <div style={{ maxWidth: '72%' }}>
-                <div style={{ padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMe ? 'var(--accent)' : 'var(--code-bg)', border: isMe ? 'none' : '1px solid var(--border)' }}>
-                  <p style={{ color: isMe ? '#fff' : 'var(--text-h)', fontSize: 14, lineHeight: 1.5, margin: 0 }}>{msg.text}</p>
+              <div style={{ maxWidth: '64%' }}>
+                <div style={{ padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMe ? '#5B4BD4' : '#F7F7FA', border: isMe ? 'none' : '1px solid #EBEBEB' }}>
+                  <p style={{ color: isMe ? '#fff' : '#111111', fontSize: 14, lineHeight: 1.5, margin: 0, fontFamily: FONT }}>{msg.text}</p>
                 </div>
-                <p style={{ color: 'var(--text)', fontSize: 10, opacity: 0.4, margin: '3px 4px 0', textAlign: isMe ? 'right' : 'left' }}>{msg.time}</p>
+                <p style={{ color: '#888888', fontSize: 10, margin: '3px 4px 0', textAlign: isMe ? 'right' : 'left', fontFamily: FONT }}>{msg.time}</p>
               </div>
             </div>
           )
@@ -277,13 +271,16 @@ function ChatView({ profile, myId, onBack }) {
       </div>
 
       {/* Input */}
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: `${bottomOffset}px`, padding: '12px 16px', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, transition: 'bottom 0.15s ease' }}>
-        <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+      <div style={{ flexShrink: 0, padding: '12px 24px', background: '#FFFFFF', borderTop: '1px solid #EBEBEB', display: 'flex', gap: 10 }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
-          onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 350)}
           placeholder={`Message ${firstName}…`}
-          style={{ flex: 1, background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-h)', fontSize: 14, outline: 'none' }} />
-        <button onClick={() => send()} style={{ background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 10, padding: '10px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>Send</button>
+          style={{ flex: 1, background: '#F7F7FA', border: '1px solid #EBEBEB', borderRadius: 10, padding: '10px 14px', color: '#111111', fontSize: 14, outline: 'none', fontFamily: FONT }}
+        />
+        <button onClick={() => send()} style={{ background: '#5B4BD4', border: 'none', color: '#fff', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: FONT }}>Send</button>
       </div>
     </div>
   )
@@ -341,16 +338,15 @@ function ConversationList({ myId, onOpenChat }) {
   }
 
   if (loading) return (
-    <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-      <p style={{ color: 'var(--text)', opacity: 0.6 }}>Loading conversations…</p>
+    <div style={{ padding: '40px 0', textAlign: 'center' }}>
+      <p style={{ color: '#888888', fontFamily: FONT }}>Loading conversations…</p>
     </div>
   )
 
   if (conversations.length === 0) return (
-    <div style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '48px 24px', textAlign: 'center' }}>
-      <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
-      <p style={{ color: 'var(--text-h)', fontSize: 16, fontWeight: 600, marginBottom: 8 }}>No connections yet</p>
-      <p style={{ color: 'var(--text)', fontSize: 14, opacity: 0.7, margin: 0 }}>Head to Find Matches to connect with someone on the same path.</p>
+    <div style={{ background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 18, padding: '48px 24px', textAlign: 'center' }}>
+      <p style={{ color: '#111111', fontSize: 16, fontWeight: 600, marginBottom: 8, fontFamily: FONT }}>No connections yet</p>
+      <p style={{ color: '#888888', fontSize: 14, margin: 0, fontFamily: FONT }}>Head to Find Matches to connect with someone on the same path.</p>
     </div>
   )
 
@@ -368,21 +364,19 @@ function ConversationList({ myId, onOpenChat }) {
 
         return (
           <button key={profile.id} onClick={() => onOpenChat(profile)}
-            style={{ width: '100%', background: unread ? 'var(--code-bg)' : 'var(--code-bg)', border: `1px solid ${unread ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left' }}>
-
+            style={{ width: '100%', background: '#F7F7FA', border: `1px solid ${unread ? '#5B4BD4' : '#EBEBEB'}`, borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left', fontFamily: FONT }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               <div style={{ width: 48, height: 48, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff' }}>{ini}</div>
               {unread && (
-                <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg)' }} />
+                <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: '#5B4BD4', border: '2px solid #FFFFFF' }} />
               )}
             </div>
-
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: unread ? 700 : 600, margin: 0 }}>{profile.display_name}</p>
-                {timeStr && <span style={{ color: unread ? 'var(--accent)' : 'var(--text)', fontSize: 11, opacity: unread ? 1 : 0.45, flexShrink: 0, fontWeight: unread ? 600 : 400 }}>{timeStr}</span>}
+                <p style={{ color: '#111111', fontSize: 15, fontWeight: unread ? 700 : 600, margin: 0, fontFamily: FONT }}>{profile.display_name}</p>
+                {timeStr && <span style={{ color: unread ? '#5B4BD4' : '#888888', fontSize: 11, flexShrink: 0, fontWeight: unread ? 600 : 400, fontFamily: FONT }}>{timeStr}</span>}
               </div>
-              <p style={{ color: unread ? 'var(--text-h)' : 'var(--text)', fontSize: 13, opacity: lastMessage ? (unread ? 0.9 : 0.65) : 0.4, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: lastMessage ? 'normal' : 'italic', fontWeight: unread ? 500 : 400 }}>
+              <p style={{ color: unread ? '#111111' : '#888888', fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: lastMessage ? 'normal' : 'italic', fontWeight: unread ? 500 : 400, fontFamily: FONT }}>
                 {preview}
               </p>
             </div>
@@ -390,6 +384,139 @@ function ConversationList({ myId, onOpenChat }) {
         )
       })}
     </div>
+  )
+}
+
+// ─── MatchCard — React Spring hover ──────────────────────────────────────────
+
+function MatchCard({ profile, pct, colorPair, ini, smartLine, connected, isConnecting, hasRated, onConnect, onThumbsUp, onThumbsDown, onMessage, onRate }) {
+  const [springs, api] = useSpring(() => ({
+    scale: 1,
+    boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
+    config: { tension: 280, friction: 22 },
+  }))
+
+  const firstName = profile.display_name?.split(' ')[0] || profile.display_name
+
+  const thumbStyle = {
+    width: 40, height: 40, borderRadius: '50%',
+    background: '#F0F0F4', border: 'none',
+    cursor: 'pointer', display: 'flex',
+    alignItems: 'center', justifyContent: 'center',
+    color: '#555555', fontFamily: FONT,
+  }
+
+  return (
+    <animated.div
+      style={{
+        background: '#F7F7FA',
+        border: '1.5px solid #EBEBEB',
+        borderRadius: 18,
+        padding: 24,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 16,
+        fontFamily: FONT,
+        scale: springs.scale,
+        boxShadow: springs.boxShadow,
+      }}
+      onMouseEnter={() => api.start({ scale: 1.012, boxShadow: '0 8px 24px rgba(0,0,0,0.08)' })}
+      onMouseLeave={() => api.start({ scale: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' })}
+    >
+      {/* Avatar + Name + Stage */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+        <div style={{
+          width: 54, height: 54, borderRadius: '50%',
+          background: `linear-gradient(145deg, ${colorPair[0]}, ${colorPair[1]})`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          flexShrink: 0, color: 'rgba(255,255,255,0.9)',
+          fontSize: 18, fontWeight: 700, letterSpacing: '0.5px',
+        }}>
+          {ini}
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+          <span style={{ fontSize: 19, fontWeight: 700, color: '#111111', letterSpacing: '-0.2px', lineHeight: 1.2, fontFamily: FONT }}>
+            {profile.display_name?.split(' ')[0]}{profile.age ? `, ${profile.age}` : ''}
+          </span>
+          <span style={{ fontSize: 13, color: '#888888', fontWeight: 500, fontFamily: FONT }}>
+            Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}
+          </span>
+        </div>
+      </div>
+
+      {/* Match badge */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="#111111">
+          <path d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"/>
+        </svg>
+        <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '0.6px', textTransform: 'uppercase', color: '#111111', fontFamily: FONT }}>
+          {matchLabel(pct)}
+        </span>
+      </div>
+
+      {/* Smart insight line */}
+      {smartLine && (
+        <p style={{ fontSize: 13.5, color: '#555555', lineHeight: 1.6, margin: 0, fontWeight: 500, fontFamily: FONT }}>
+          {smartLine}
+        </p>
+      )}
+
+      {/* Action row */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 'auto' }}>
+        {hasRated ? (
+          <span style={{ fontSize: 13, color: '#5B4BD4', fontWeight: 600, fontFamily: FONT }}>Rated</span>
+        ) : connected ? (
+          <>
+            <button
+              onClick={onMessage}
+              style={{ flex: 1, height: 42, background: '#5B4BD4', color: '#FFFFFF', border: 'none', borderRadius: 999, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}
+            >
+              Message {firstName}
+            </button>
+            <button
+              onClick={onRate}
+              style={{ padding: '0 18px', height: 42, background: 'transparent', border: '1.5px solid #DEDEDE', borderRadius: 999, color: '#555555', fontSize: 13, cursor: 'pointer', fontFamily: FONT }}
+            >
+              Rate
+            </button>
+          </>
+        ) : (
+          <>
+            <motion.div whileTap={{ scale: 0.96 }} style={{ flex: 1 }}>
+              <button
+                onClick={onConnect}
+                disabled={isConnecting}
+                style={{
+                  width: '100%', height: 42,
+                  background: 'rgba(91, 75, 212, 0.12)',
+                  color: '#5B4BD4', border: 'none', borderRadius: 999,
+                  fontSize: 14, fontWeight: 600,
+                  cursor: isConnecting ? 'not-allowed' : 'pointer',
+                  opacity: isConnecting ? 0.6 : 1,
+                  transition: 'background 0.18s ease', fontFamily: FONT,
+                }}
+              >
+                {isConnecting ? 'Connecting…' : 'Request to connect'}
+              </button>
+            </motion.div>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+              <ThumbButton onClick={onThumbsUp} style={thumbStyle}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/>
+                  <path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/>
+                </svg>
+              </ThumbButton>
+              <ThumbButton onClick={onThumbsDown} style={thumbStyle}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/>
+                  <path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/>
+                </svg>
+              </ThumbButton>
+            </div>
+          </>
+        )}
+      </div>
+    </animated.div>
   )
 }
 
@@ -475,7 +602,7 @@ export default function Matches() {
     setRemoved(prev => ({ ...prev, [profileId]: true }))
   }
 
-  // Full-screen overlays
+  // Full-screen overlays within content area
   if (chatTarget) return (
     <ChatView profile={chatTarget} myId={myId} onBack={() => { setChatTarget(null); checkUnreads() }} />
   )
@@ -489,371 +616,116 @@ export default function Matches() {
   const visible = matches.filter(m => !removed[m.profile.id])
 
   return (
-    <div style={{
-      padding: '48px 48px 60px 48px',
-      background: '#FFFFFF',
-      minHeight: '100%',
-      fontFamily: "'Inter', system-ui, sans-serif",
-    }}>
+    <div style={{ flex: 1, overflowY: 'auto', padding: '48px 48px 60px 48px', background: '#FFFFFF', fontFamily: FONT }}>
 
-      {/* Heading */}
-      <h1 style={{
-        fontSize: 36,
-        fontWeight: 800,
-        color: '#111111',
-        letterSpacing: '-0.8px',
-        margin: '0 0 24px 0',
-      }}>
+      <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 24px 0', fontFamily: FONT }}>
         Match
       </h1>
 
       {/* View toggle */}
-      <div style={{
-        display: 'inline-flex',
-        gap: 6,
-        marginBottom: 28,
-        background: '#F0F0F4',
-        padding: 4,
-        borderRadius: 999,
-      }}>
-        <button
-          onClick={() => setView('matches')}
-          style={{
-            padding: '8px 22px',
-            borderRadius: 999,
-            border: 'none',
-            fontSize: 14,
-            fontWeight: view === 'matches' ? 600 : 500,
-            cursor: 'pointer',
-            transition: 'all 0.18s ease',
-            background: view === 'matches' ? '#FFFFFF' : 'transparent',
-            color: view === 'matches' ? '#111111' : '#888888',
-            boxShadow: view === 'matches' ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-          }}
-        >
-          Find Matches
-        </button>
-        <button
-          onClick={() => setView('messages')}
-          style={{
-            padding: '8px 22px',
-            borderRadius: 999,
-            border: 'none',
-            fontSize: 14,
-            fontWeight: view === 'messages' ? 600 : 500,
-            cursor: 'pointer',
-            transition: 'all 0.18s ease',
-            background: view === 'messages' ? '#FFFFFF' : 'transparent',
-            color: view === 'messages' ? '#111111' : '#888888',
-            boxShadow: view === 'messages' ? '0 1px 4px rgba(0,0,0,0.10)' : 'none',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 6,
-          }}
-        >
-          Messages
-          {hasUnread && view !== 'messages' && (
-            <span style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: '#5B4BD4',
-              display: 'inline-block',
-              flexShrink: 0,
-            }} />
-          )}
-        </button>
-      </div>
-
-      {/* Messages view */}
-      {view === 'messages' && (
-        <ConversationList myId={myId} onOpenChat={(profile) => setChatTarget(profile)} />
-      )}
-
-      {/* Matches view */}
-      {view === 'matches' && (
-        <>
-          {loading && (
-            <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-              <p style={{ color: '#888888', fontSize: 15 }}>Finding your matches…</p>
-            </div>
-          )}
-
-          {!loading && visible.length === 0 && (
-            <div style={{
-              background: '#F7F7FA',
-              border: '1.5px solid #EBEBEB',
-              borderRadius: 18,
-              padding: 40,
-              textAlign: 'center',
-              color: '#888888',
-              fontSize: 15,
-              gridColumn: '1 / -1',
-            }}>
-              <div style={{ fontSize: 36, marginBottom: 12 }}>🌸</div>
-              <p style={{ fontWeight: 600, color: '#111111', marginBottom: 8, fontSize: 16 }}>More people are joining</p>
-              <p style={{ margin: 0, fontSize: 14 }}>No close matches yet. As more women join, we'll find the right people for you.</p>
-            </div>
-          )}
-
-          {!loading && visible.length > 0 && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: 20,
-            }}>
-              {visible.map(({ profile, matchPct }, i) => {
-                const connected    = connections[profile.id]
-                const isConnecting = connecting[profile.id]
-                const hasRated     = rated[profile.id]
-                const pct          = Math.round(matchPct)
-                const colorPair    = getAvatarColor(profile.display_name)
-                const ini          = getInitials(profile.display_name)
-                const smartLine    = getSmartLine(profile)
-                const sameStage    = currentProfile?.ivf_stage === profile.ivf_stage
-
-                const round            = getRound(profile.feature_vec)
-                const roundLabel       = ROUND_LABELS[round] || null
-                const pathwayLabel     = PATHWAY_LABELS[profile.pathway] || null
-                const fundingRoundLine = [pathwayLabel, roundLabel].filter(Boolean).join(' · ')
-
-                const sharedHobbies = getSharedHobbies(currentProfile?.hobbies_vec, profile.hobbies_vec)
-                const hobbyNames    = sharedHobbies.slice(0, 2).map(h => HOBBY_LABELS[h] || h)
-                const hobbyLine     = hobbyNames.length > 0
-                  ? `You both unwind through ${hobbyNames.join(' and ')}`
-                  : null
-
-                return (
-                  <MatchCard
-                    key={profile.id}
-                    profile={profile}
-                    pct={pct}
-                    colorPair={colorPair}
-                    ini={ini}
-                    smartLine={smartLine}
-                    connected={connected}
-                    isConnecting={isConnecting}
-                    hasRated={hasRated}
-                    onConnect={() => handleConnect(profile.id)}
-                    onThumbsUp={() => handleThumbsUp(profile.id)}
-                    onThumbsDown={() => handleThumbsDown(profile.id)}
-                    onMessage={() => setChatTarget(profile)}
-                    onRate={() => setFeedbackTarget(profile)}
-                  />
-                )
-              })}
-            </div>
-          )}
-        </>
-      )}
-    </div>
-  )
-}
-
-// ─── MatchCard ────────────────────────────────────────────────────────────────
-
-function MatchCard({ profile, pct, colorPair, ini, smartLine, connected, isConnecting, hasRated, onConnect, onThumbsUp, onThumbsDown, onMessage, onRate }) {
-  const [hovered, setHovered]           = useState(false)
-  const [connectHover, setConnectHover] = useState(false)
-  const [msgHover, setMsgHover]         = useState(false)
-  const [upHover, setUpHover]           = useState(false)
-  const [downHover, setDownHover]       = useState(false)
-
-  const firstName = profile.display_name?.split(' ')[0] || profile.display_name
-
-  return (
-    <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: '#F7F7FA',
-        border: '1.5px solid #EBEBEB',
-        borderRadius: 18,
-        padding: 24,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 16,
-        transition: 'box-shadow 0.18s ease',
-        boxShadow: hovered ? '0 4px 16px rgba(0,0,0,0.06)' : 'none',
-        fontFamily: "'Inter', system-ui, sans-serif",
-      }}
-    >
-      {/* 1. Avatar + Name + Stage */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-        <div style={{
-          width: 54,
-          height: 54,
-          borderRadius: '50%',
-          background: `linear-gradient(145deg, ${colorPair[0]}, ${colorPair[1]})`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexShrink: 0,
-          color: 'rgba(255,255,255,0.9)',
-          fontSize: 18,
-          fontWeight: 700,
-          letterSpacing: '0.5px',
-        }}>
-          {ini}
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          <span style={{
-            fontSize: 19,
-            fontWeight: 700,
-            color: '#111111',
-            letterSpacing: '-0.3px',
-            lineHeight: 1.2,
-          }}>
-            {profile.display_name?.split(' ')[0]}{profile.age ? `, ${profile.age}` : ''}
-          </span>
-          <span style={{ fontSize: 13, color: '#888888', fontWeight: 400 }}>
-            Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}
-          </span>
-        </div>
-      </div>
-
-      {/* 2. Match quality badge */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="#111111">
-          <path d="M12 2 L13.5 10.5 L22 12 L13.5 13.5 L12 22 L10.5 13.5 L2 12 L10.5 10.5 Z"/>
-        </svg>
-        <span style={{
-          fontSize: 10.5,
-          fontWeight: 700,
-          letterSpacing: '1.2px',
-          textTransform: 'uppercase',
-          color: '#111111',
-        }}>
-          {matchLabel(pct)}
-        </span>
-      </div>
-
-      {/* 3. Smart insight line */}
-      {smartLine && (
-        <p style={{
-          fontSize: 13.5,
-          color: '#555555',
-          lineHeight: 1.6,
-          margin: 0,
-        }}>
-          {smartLine}
-        </p>
-      )}
-
-      {/* 4. Action row */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 'auto' }}>
-        {hasRated ? (
-          <span style={{ fontSize: 13, color: '#5B4BD4', fontWeight: 600 }}>Rated ✓</span>
-        ) : connected ? (
-          <>
-            <button
-              onClick={onMessage}
-              onMouseEnter={() => setMsgHover(true)}
-              onMouseLeave={() => setMsgHover(false)}
-              style={{
-                flex: 1,
-                height: 42,
-                background: '#5B4BD4',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: 999,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: 'pointer',
-                opacity: msgHover ? 0.9 : 1,
-                transition: 'opacity 0.15s ease',
-              }}
-            >
-              💬 Message {firstName}
-            </button>
-            <button
-              onClick={onRate}
-              style={{
-                padding: '0 18px',
-                height: 42,
-                background: 'transparent',
-                border: '1.5px solid #DEDEDE',
-                borderRadius: 999,
-                color: '#555555',
-                fontSize: 13,
-                cursor: 'pointer',
-              }}
-            >
-              Rate
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              onClick={onConnect}
-              disabled={isConnecting}
-              onMouseEnter={() => setConnectHover(true)}
-              onMouseLeave={() => setConnectHover(false)}
-              style={{
-                flex: 1,
-                height: 42,
-                background: isConnecting
-                  ? 'rgba(107, 95, 212, 0.18)'
-                  : connectHover
-                  ? 'rgba(107, 95, 212, 0.28)'
-                  : 'rgba(107, 95, 212, 0.18)',
-                color: '#5B4BD4',
-                border: 'none',
-                borderRadius: 999,
-                fontSize: 14,
-                fontWeight: 600,
-                cursor: isConnecting ? 'not-allowed' : 'pointer',
-                opacity: isConnecting ? 0.6 : 1,
-                transition: 'background 0.18s ease',
-              }}
-            >
-              {isConnecting ? 'Connecting…' : 'Request to connect'}
-            </button>
-            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-              <button
-                onClick={onThumbsUp}
-                onMouseEnter={() => setUpHover(true)}
-                onMouseLeave={() => setUpHover(false)}
+      <div style={{ display: 'inline-flex', gap: 0, background: '#F0F0F4', padding: 4, borderRadius: 999, marginBottom: 28, position: 'relative' }}>
+        {['matches', 'messages'].map(v => (
+          <button
+            key={v}
+            onClick={() => setView(v)}
+            style={{
+              position: 'relative', padding: '8px 22px', borderRadius: 999,
+              border: 'none', background: 'transparent',
+              fontSize: 14, fontWeight: view === v ? 600 : 500,
+              color: view === v ? '#111111' : '#888888',
+              cursor: 'pointer', zIndex: 1, fontFamily: FONT,
+              transition: 'color 0.18s ease',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {v === 'matches' ? 'Find Matches' : 'Messages'}
+            {v === 'messages' && hasUnread && view !== 'messages' && (
+              <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#5B4BD4', display: 'inline-block', flexShrink: 0 }} />
+            )}
+            {view === v && (
+              <motion.div
+                layoutId="togglePill"
                 style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: upHover ? '#E0E0E5' : '#EDEDF0',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 18,
-                  transition: 'background 0.15s ease',
+                  position: 'absolute', inset: 0, borderRadius: 999,
+                  background: '#FFFFFF', boxShadow: '0 1px 4px rgba(0,0,0,0.10)', zIndex: -1,
                 }}
-              >
-                👍
-              </button>
-              <button
-                onClick={onThumbsDown}
-                onMouseEnter={() => setDownHover(true)}
-                onMouseLeave={() => setDownHover(false)}
-                style={{
-                  width: 40,
-                  height: 40,
-                  borderRadius: '50%',
-                  background: downHover ? '#E0E0E5' : '#EDEDF0',
-                  border: 'none',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 18,
-                  transition: 'background 0.15s ease',
-                }}
-              >
-                👎
-              </button>
-            </div>
-          </>
-        )}
+                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+              />
+            )}
+          </button>
+        ))}
       </div>
+
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={view}
+          initial={{ opacity: 0, x: view === 'matches' ? -12 : 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: view === 'matches' ? 12 : -12 }}
+          transition={{ duration: 0.2, ease: 'easeOut' }}
+        >
+          {view === 'messages' && (
+            <ConversationList myId={myId} onOpenChat={(profile) => setChatTarget(profile)} />
+          )}
+
+          {view === 'matches' && (
+            <>
+              {loading && (
+                <div style={{ padding: '60px 0', textAlign: 'center' }}>
+                  <p style={{ color: '#888888', fontSize: 15, fontFamily: FONT }}>Finding your matches…</p>
+                </div>
+              )}
+
+              {!loading && visible.length === 0 && (
+                <div style={{ background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 18, padding: 40, textAlign: 'center', color: '#888888', fontSize: 15 }}>
+                  <p style={{ fontWeight: 600, color: '#111111', marginBottom: 8, fontSize: 16, fontFamily: FONT }}>More people are joining</p>
+                  <p style={{ margin: 0, fontSize: 14, fontFamily: FONT }}>No close matches yet. As more women join, we'll find the right people for you.</p>
+                </div>
+              )}
+
+              {!loading && visible.length > 0 && (
+                <motion.div
+                  style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
+                  initial="hidden" animate="visible"
+                  variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } } }}
+                >
+                  <AnimatePresence>
+                    {visible.map(({ profile, matchPct }) => {
+                      const connected    = connections[profile.id]
+                      const isConnecting = connecting[profile.id]
+                      const hasRated     = rated[profile.id]
+                      const pct          = Math.round(matchPct)
+                      const colorPair    = getAvatarColor(profile.display_name)
+                      const ini          = getInitials(profile.display_name)
+                      const smartLine    = getSmartLine(profile)
+
+                      return (
+                        <motion.div
+                          key={profile.id}
+                          layout
+                          variants={{ hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: 0.32, ease: 'easeOut' } } }}
+                          exit={{ opacity: 0, scale: 0.92, transition: { duration: 0.2 } }}
+                        >
+                          <MatchCard
+                            profile={profile} pct={pct} colorPair={colorPair} ini={ini}
+                            smartLine={smartLine} connected={connected} isConnecting={isConnecting}
+                            hasRated={hasRated}
+                            onConnect={() => handleConnect(profile.id)}
+                            onThumbsUp={() => handleThumbsUp(profile.id)}
+                            onThumbsDown={() => handleThumbsDown(profile.id)}
+                            onMessage={() => setChatTarget(profile)}
+                            onRate={() => setFeedbackTarget(profile)}
+                          />
+                        </motion.div>
+                      )
+                    })}
+                  </AnimatePresence>
+                </motion.div>
+              )}
+            </>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </div>
   )
 }
