@@ -12,18 +12,35 @@ function getLastRead(myId, otherId) {
 }
 
 export default function Dashboard({ session }) {
-  const [activeTab, setActiveTab]   = useState('home')
+  const [activeTab, setActiveTab]   = useState('learn')
   const [userId, setUserId]         = useState(null)
   const [hasUnread, setHasUnread]   = useState(false)
+  const [firstName, setFirstName]   = useState('')
+  const [displayName, setDisplayName] = useState('')
 
   // Unwind state lifted here so it survives tab switches
   const [unwindState, setUnwindState] = useState(INITIAL_UNWIND_STATE)
 
-  // Get the logged-in user's ID once
+  // Get the logged-in user's ID and profile once
   useEffect(() => {
     async function getUser() {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user) setUserId(user.id)
+      if (user) {
+        setUserId(user.id)
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('display_name')
+          .eq('id', user.id)
+          .single()
+        if (profile?.display_name) {
+          setDisplayName(profile.display_name)
+          setFirstName(profile.display_name.split(' ')[0])
+        } else {
+          const emailName = user.email?.split('@')[0] || ''
+          setDisplayName(emailName)
+          setFirstName(emailName)
+        }
+      }
     }
     getUser()
   }, [session])
@@ -63,102 +80,208 @@ export default function Dashboard({ session }) {
       case 'match':     return <Matches session={session} />
       case 'community': return <Community />
       case 'unwind':    return <Unwind state={unwindState} onStateChange={setUnwindState} />
-      default:          return <Home session={session} />
+      default:          return <Learn />
     }
   }
 
-  const tabs = [
+  const navItems = [
     {
-      id: 'home', label: 'Home',
-      icon: (active) => (
-        <svg width="24" height="24" fill="none" stroke={active ? 'var(--accent)' : 'var(--text)'} strokeWidth="1.8" viewBox="0 0 24 24">
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" strokeLinecap="round" strokeLinejoin="round"/>
-          <polyline points="9 22 9 12 15 12 15 22" strokeLinecap="round" strokeLinejoin="round"/>
+      id: 'learn',
+      label: 'Learn',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
         </svg>
-      )
+      ),
     },
     {
-      id: 'learn', label: 'Learn',
-      icon: (active) => (
-        <svg width="24" height="24" fill="none" stroke={active ? 'var(--accent)' : 'var(--text)'} strokeWidth="1.8" viewBox="0 0 24 24">
-          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" strokeLinecap="round" strokeLinejoin="round"/>
+      id: 'match',
+      label: 'Match',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="9" cy="12" r="5"/>
+          <circle cx="15" cy="12" r="5"/>
         </svg>
-      )
+      ),
     },
     {
-      id: 'match', label: 'Match',
-      icon: (active) => (
-        <svg width="24" height="24" fill="none" stroke={active ? 'var(--accent)' : 'var(--text)'} strokeWidth="1.8" viewBox="0 0 24 24">
-          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
-      )
-    },
-    {
-      id: 'community', label: 'Community',
-      icon: (active) => (
-        <svg width="24" height="24" fill="none" stroke={active ? 'var(--accent)' : 'var(--text)'} strokeWidth="1.8" viewBox="0 0 24 24">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round"/>
+      id: 'community',
+      label: 'Community',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+          <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
         </svg>
-      )
+      ),
     },
     {
-      id: 'unwind', label: 'Unwind',
-      icon: (active) => (
-        <svg width="24" height="24" fill="none" stroke={active ? 'var(--accent)' : 'var(--text)'} strokeWidth="1.8" viewBox="0 0 24 24">
-          <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" strokeLinecap="round" strokeLinejoin="round"/>
-          <path d="M12 6v6l4 2" strokeLinecap="round" strokeLinejoin="round"/>
+      id: 'unwind',
+      label: 'Unwind',
+      icon: (
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
         </svg>
-      )
+      ),
     },
   ]
 
-  return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg)', maxWidth: 480, margin: '0 auto', position: 'relative' }}>
+  const avatarLetter = (firstName || displayName || '?')[0].toUpperCase()
 
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--sidebar)', flexShrink: 0 }}>
-        <span style={{ color: 'var(--text-h)', fontWeight: 700, fontSize: 17, letterSpacing: '-0.3px' }}>
-          🔥 Ember
-        </span>
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'row',
+      height: '100vh',
+      overflow: 'hidden',
+      fontFamily: "'Inter', system-ui, sans-serif",
+    }}>
+
+      {/* ── Sidebar ── */}
+      <div style={{
+        width: 200,
+        minHeight: '100vh',
+        background: '#FFFFFF',
+        borderRight: '1px solid #EBEBEB',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '28px 14px',
+        boxSizing: 'border-box',
+        flexShrink: 0,
+      }}>
+
+        {/* Brand */}
+        <div style={{
+          fontSize: 16,
+          fontWeight: 700,
+          color: '#5B4BD4',
+          marginBottom: 36,
+          paddingLeft: 8,
+          letterSpacing: '-0.3px',
+        }}>
+          Ember
+        </div>
+
+        {/* Nav items */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          {navItems.map(item => {
+            const active = activeTab === item.id
+            const showBadge = item.id === 'match' && hasUnread && !active
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  height: 44,
+                  padding: '0 10px',
+                  borderRadius: 10,
+                  border: 'none',
+                  cursor: 'pointer',
+                  background: active ? '#EEEDF9' : 'transparent',
+                  color: active ? '#5B4BD4' : '#1A1A1A',
+                  fontWeight: active ? 600 : 400,
+                  fontSize: 14,
+                  textAlign: 'left',
+                  position: 'relative',
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <span style={{ flexShrink: 0, display: 'flex', position: 'relative' }}>
+                  {item.icon}
+                  {showBadge && (
+                    <span style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: '#5B4BD4',
+                      border: '2px solid #FFFFFF',
+                    }} />
+                  )}
+                </span>
+                {item.label}
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Bottom section */}
+        <div style={{ marginTop: 'auto' }}>
+
+          {/* User profile */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            padding: '8px 10px',
+          }}>
+            <div style={{
+              width: 36,
+              height: 36,
+              borderRadius: '50%',
+              background: 'linear-gradient(135deg, #9B8ED6, #5B4BD4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#FFFFFF',
+              fontSize: 15,
+              fontWeight: 600,
+              flexShrink: 0,
+            }}>
+              {avatarLetter}
+            </div>
+            <span style={{
+              fontSize: 13,
+              fontWeight: 500,
+              color: '#1A1A1A',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              maxWidth: 110,
+            }}>
+              {displayName || session?.user?.email?.split('@')[0] || ''}
+            </span>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ── Main content ── */}
+      <div style={{
+        flex: 1,
+        height: '100vh',
+        overflowY: 'auto',
+        background: '#F9F9FB',
+        position: 'relative',
+      }}>
         <button
           onClick={handleLogout}
-          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}>
+          style={{
+            position: 'absolute',
+            top: 20,
+            right: 24,
+            zIndex: 10,
+            background: 'transparent',
+            border: '1px solid #EBEBEB',
+            borderRadius: 8,
+            padding: '6px 14px',
+            color: '#1A1A1A',
+            fontSize: 13,
+            fontWeight: 500,
+            cursor: 'pointer',
+            fontFamily: "'Inter', system-ui, sans-serif",
+          }}
+        >
           Log out
         </button>
-      </div>
-
-      {/* Page content */}
-      <div style={{ flex: 1, overflowY: 'auto', paddingBottom: 80 }}>
         {renderContent()}
-      </div>
-
-      {/* Bottom nav */}
-      <div style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: '100%', maxWidth: 480, display: 'flex', borderTop: '1px solid var(--border)', background: 'var(--sidebar)', zIndex: 100 }}>
-        {tabs.map((tab) => {
-          const active    = activeTab === tab.id
-          const showBadge = tab.id === 'match' && hasUnread && !active
-
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '10px 0 14px', background: 'transparent', border: 'none', cursor: 'pointer', gap: 4, position: 'relative' }}>
-              <div style={{ position: 'relative', display: 'inline-flex' }}>
-                {tab.icon(active)}
-                {showBadge && (
-                  <div style={{ position: 'absolute', top: -2, right: -2, width: 9, height: 9, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--sidebar)' }} />
-                )}
-              </div>
-              <span style={{ fontSize: 11, color: active ? 'var(--accent)' : 'var(--text)', fontWeight: active ? 600 : 400 }}>
-                {tab.label}
-              </span>
-            </button>
-          )
-        })}
       </div>
 
     </div>
