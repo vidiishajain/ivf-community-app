@@ -444,10 +444,6 @@ export default function Auth() {
           </div>
         </div>
 
-        <p style={S.panelFooter}>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod
-          tempor incididunt ut labore
-        </p>
       </div>
     </div>
   )
