@@ -53,6 +53,9 @@ export default function Home({ session }) {
   const [connectionCount, setConnectionCount] = useState(0)
   const [showAbout, setShowAbout]           = useState(false)
   const [loading, setLoading]               = useState(true)
+  const [editingStage, setEditingStage]     = useState(false)
+  const [selectedStage, setSelectedStage]   = useState(null)
+  const [saving, setSaving]                 = useState(false)
 
   useEffect(() => {
     async function fetchData() {
@@ -69,6 +72,22 @@ export default function Home({ session }) {
     }
     fetchData()
   }, [session])
+
+  async function handleUpdateStage() {
+    if (!selectedStage || saving) return
+    setSaving(true)
+    const { error } = await supabase
+      .from('profiles')
+      .update({ ivf_stage: selectedStage })
+      .eq('id', session.user.id)
+    if (!error) {
+      setProfile(prev => ({ ...prev, ivf_stage: selectedStage }))
+      setEditingStage(false)
+    } else {
+      console.error('Stage update error:', error)
+    }
+    setSaving(false)
+  }
 
   if (loading) return (
     <div style={{ padding: '60px 20px', textAlign: 'center' }}>
@@ -129,29 +148,85 @@ export default function Home({ session }) {
       {/* Stage card */}
       {stage && (
         <div style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px', marginBottom: 14 }}>
+
+          {/* Card header with Update button */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.07em', textTransform: 'uppercase', color: 'var(--accent)' }}>
               Your stage
             </span>
-            <span style={{ fontSize: 12, color: 'var(--text)', opacity: 0.5 }}>
-              {stage} of 12
-            </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 12, color: 'var(--text)', opacity: 0.5 }}>{stage} of 12</span>
+              {!editingStage && (
+                <button
+                  onClick={() => { setSelectedStage(stage); setEditingStage(true) }}
+                  style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0 }}>
+                  Update
+                </button>
+              )}
+            </div>
           </div>
-          <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, marginBottom: 14 }}>
-            <div style={{
-              height: '100%',
-              width: `${(stage / 12) * 100}%`,
-              background: 'var(--accent)',
-              borderRadius: 4,
-              transition: 'width 0.6s ease',
-            }} />
-          </div>
-          <p style={{ color: 'var(--text-h)', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>
-            Stage {stage} · {STAGE_LABELS[stage]}
-          </p>
-          <p style={{ color: 'var(--text)', fontSize: 14, lineHeight: 1.7, margin: 0, opacity: 0.85 }}>
-            {STAGE_SENTENCES[stage]}
-          </p>
+
+          {/* Normal view */}
+          {!editingStage && (
+            <>
+              <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, marginBottom: 14 }}>
+                <div style={{ height: '100%', width: `${(stage / 12) * 100}%`, background: 'var(--accent)', borderRadius: 4, transition: 'width 0.6s ease' }} />
+              </div>
+              <p style={{ color: 'var(--text-h)', fontSize: 16, fontWeight: 600, margin: '0 0 8px' }}>
+                Stage {stage} · {STAGE_LABELS[stage]}
+              </p>
+              <p style={{ color: 'var(--text)', fontSize: 14, lineHeight: 1.7, margin: 0, opacity: 0.85 }}>
+                {STAGE_SENTENCES[stage]}
+              </p>
+            </>
+          )}
+
+          {/* Stage picker */}
+          {editingStage && (
+            <div>
+              <p style={{ color: 'var(--text)', fontSize: 13, opacity: 0.7, marginBottom: 14 }}>
+                Which stage are you at now?
+              </p>
+
+              {/* 4-column grid of stage numbers */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
+                {[1,2,3,4,5,6,7,8,9,10,11,12].map(s => (
+                  <button key={s} onClick={() => setSelectedStage(s)}
+                    style={{
+                      padding: '10px 0',
+                      borderRadius: 10,
+                      border: `1px solid ${selectedStage === s ? 'var(--accent)' : 'var(--border)'}`,
+                      background: selectedStage === s ? 'var(--accent)' : 'transparent',
+                      color: selectedStage === s ? '#fff' : 'var(--text)',
+                      fontSize: 15,
+                      fontWeight: selectedStage === s ? 700 : 400,
+                      cursor: 'pointer',
+                      transition: 'all 0.12s ease',
+                    }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+
+              {/* Label for selected stage */}
+              <p style={{ color: 'var(--text-h)', fontSize: 13, fontWeight: 600, marginBottom: 16, minHeight: 20 }}>
+                {selectedStage ? `Stage ${selectedStage} · ${STAGE_LABELS[selectedStage]}` : ''}
+              </p>
+
+              {/* Save / Cancel */}
+              <div style={{ display: 'flex', gap: 10 }}>
+                <button onClick={handleUpdateStage} disabled={saving || !selectedStage}
+                  style={{ flex: 1, background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '11px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1 }}>
+                  {saving ? 'Saving…' : 'Save'}
+                </button>
+                <button onClick={() => setEditingStage(false)}
+                  style={{ flex: 1, background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, padding: '11px', color: 'var(--text)', fontSize: 14, cursor: 'pointer' }}>
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
         </div>
       )}
 
