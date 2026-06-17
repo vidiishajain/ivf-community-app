@@ -3,11 +3,8 @@ import { motion } from 'framer-motion'
 import { useSpring, animated } from '@react-spring/web'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
-import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
-gsap.registerPlugin(ScrollTrigger)
-
-const FONT = "'Quicksand', system-ui, sans-serif"
+const FONT = "'Inter', system-ui, sans-serif"
 
 const ARTICLES = [
   {
@@ -52,8 +49,6 @@ const ARTICLES = [
   },
 ]
 
-// ── React Spring hover card ───────────────────────────────────────────────────
-
 function ArticleCard({ article }) {
   const [springs, api] = useSpring(() => ({
     scale: 1,
@@ -75,7 +70,7 @@ function ArticleCard({ article }) {
         scale: springs.scale,
         boxShadow: springs.boxShadow,
       }}
-      onMouseEnter={() => api.start({ scale: 1.015, boxShadow: '0 8px 24px rgba(0,0,0,0.09)' })}
+      onMouseEnter={() => api.start({ scale: 1.015, boxShadow: '0 4px 20px rgba(0,0,0,0.07)' })}
       onMouseLeave={() => api.start({ scale: 1, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' })}
     >
       {/* Category pill */}
@@ -86,7 +81,7 @@ function ArticleCard({ article }) {
         color: article.color.text,
         fontSize: 10,
         fontWeight: 700,
-        letterSpacing: '0.6px',
+        letterSpacing: '0.8px',
         textTransform: 'uppercase',
         padding: '5px 12px',
         borderRadius: 999,
@@ -115,14 +110,18 @@ function ArticleCard({ article }) {
         lineHeight: 1.65,
         flex: 1,
         margin: 0,
-        fontWeight: 500,
         fontFamily: FONT,
       }}>
         {article.description}
       </p>
 
       {/* Footer */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+      <div style={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 'auto',
+      }}>
         <span style={{ fontSize: 12.5, color: '#9E9E9E', fontWeight: 400, fontFamily: FONT }}>
           {article.readTime}
         </span>
@@ -153,8 +152,6 @@ function ReadMoreLink({ url, color }) {
     </a>
   )
 }
-
-// ── View More button ─────────────────────────────────────────────────────────
 
 function ViewMoreButton() {
   const [hovered, setHovered] = useState(false)
@@ -202,8 +199,6 @@ function ViewMoreButton() {
   )
 }
 
-// ── Main export ──────────────────────────────────────────────────────────────
-
 export default function Learn() {
   const headingRef = useRef(null)
 
@@ -229,9 +224,9 @@ export default function Learn() {
         ref={headingRef}
         style={{
           fontSize: 36,
-          fontWeight: 700,
+          fontWeight: 800,
           color: '#111111',
-          letterSpacing: '-0.5px',
+          letterSpacing: '-0.8px',
           margin: '0 0 32px 0',
           fontFamily: FONT,
         }}
@@ -239,7 +234,6 @@ export default function Learn() {
         Learn
       </h1>
 
-      {/* Staggered card grid */}
       <motion.div
         style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
         initial="hidden"
