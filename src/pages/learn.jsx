@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useSpring, animated } from '@react-spring/web'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const FONT = "'Inter', system-ui, sans-serif"
 
@@ -201,6 +202,7 @@ function ViewMoreButton() {
 
 export default function Learn() {
   const headingRef = useRef(null)
+  const isMobile   = useIsMobile()
 
   useGSAP(() => {
     if (!headingRef.current) return
@@ -216,14 +218,14 @@ export default function Learn() {
     <div style={{
       flex: 1,
       overflowY: 'auto',
-      padding: '48px 48px 60px 48px',
+      padding: isMobile ? '24px 16px 60px' : '48px 48px 60px 48px',
       background: '#FFFFFF',
       fontFamily: FONT,
     }}>
       <h1
         ref={headingRef}
         style={{
-          fontSize: 36,
+          fontSize: isMobile ? 28 : 36,
           fontWeight: 800,
           color: '#111111',
           letterSpacing: '-0.8px',
@@ -235,7 +237,7 @@ export default function Learn() {
       </h1>
 
       <motion.div
-        style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
+        style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20 }}
         initial="hidden"
         animate="visible"
         variants={{

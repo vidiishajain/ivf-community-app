@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { supabase } from '../lib/supabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 import Home from './home'
 import Learn from './learn'
 import Matches from './matches'
@@ -21,6 +22,7 @@ export default function Dashboard({ session }) {
   const [userId, setUserId]           = useState(null)
   const [displayName, setDisplayName] = useState('')
   const [hasUnread, setHasUnread]     = useState(false)
+  const isMobile                      = useIsMobile()
 
   // Unwind state lifted here so it survives tab switches
   const [unwindState, setUnwindState] = useState(INITIAL_UNWIND_STATE)
@@ -148,6 +150,93 @@ export default function Dashboard({ session }) {
       ),
     },
   ]
+
+  if (isMobile) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+
+        {/* Main content — leaves room for bottom tab bar */}
+        <div style={{ flex: 1, overflowY: 'auto', background: '#FFFFFF', paddingBottom: 60 }}>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+              style={{ minHeight: '100%' }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+
+        {/* Bottom tab bar */}
+        <div style={{
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: 60,
+          background: '#FFFFFF',
+          borderTop: '1px solid #EBEBEB',
+          display: 'flex',
+          alignItems: 'stretch',
+          zIndex: 100,
+        }}>
+          {navItems.map(item => {
+            const active    = activeTab === item.id
+            const showBadge = item.id === 'match' && hasUnread && !active
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id)}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 3,
+                  border: 'none',
+                  background: 'transparent',
+                  cursor: 'pointer',
+                  color: active ? '#5B4BD4' : '#888888',
+                  position: 'relative',
+                  padding: 0,
+                }}
+              >
+                <span style={{ position: 'relative', display: 'inline-flex' }}>
+                  {item.icon}
+                  {showBadge && (
+                    <span style={{
+                      position: 'absolute',
+                      top: -2,
+                      right: -2,
+                      width: 7,
+                      height: 7,
+                      borderRadius: '50%',
+                      background: '#5B4BD4',
+                      border: '2px solid #FFFFFF',
+                    }} />
+                  )}
+                </span>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: active ? 700 : 500,
+                  fontFamily: FONT,
+                  letterSpacing: '0.01em',
+                }}>
+                  {item.label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+      </div>
+    )
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'row', height: '100vh', overflow: 'hidden' }}>

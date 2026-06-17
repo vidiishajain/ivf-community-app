@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useSpring, animated } from '@react-spring/web'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const FONT = "'Quicksand', system-ui, sans-serif"
 
@@ -156,7 +157,7 @@ function OptionButton({ onClick, children, style }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function Unwind({ state, onStateChange }) {
-
+  const isMobile       = useIsMobile()
   const suggestionsRef = useRef(null)
 
   function update(patch) {
@@ -292,7 +293,7 @@ Reply ONLY with a raw JSON array — no markdown, no backticks, no explanation:
               position: 'relative',
               overflow: 'hidden',
               fontFamily: FONT,
-              padding: '48px 24px',
+              padding: isMobile ? '24px 16px' : '48px 24px',
             }}
           >
             <BreathingBlob />
@@ -340,7 +341,7 @@ Reply ONLY with a raw JSON array — no markdown, no backticks, no explanation:
               position: 'relative',
               overflow: 'hidden',
               fontFamily: FONT,
-              padding: '48px 24px',
+              padding: isMobile ? '24px 16px' : '48px 24px',
             }}
           >
             <BreathingBlob />
@@ -415,7 +416,7 @@ Reply ONLY with a raw JSON array — no markdown, no backticks, no explanation:
             key="step-2"
             variants={stepVariants}
             initial="hidden" animate="visible" exit="exit"
-            style={{ flex: 1, overflowY: 'auto', padding: '48px 24px 60px', fontFamily: FONT, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
+            style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '24px 16px 60px' : '48px 24px 60px', fontFamily: FONT, display: 'flex', flexDirection: 'column', alignItems: 'center' }}
           >
             <div style={{ width: '100%', maxWidth: 640 }}>
             <button

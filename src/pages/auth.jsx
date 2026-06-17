@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { supabase } from "../lib/supabase"
+import { useIsMobile } from "../hooks/useIsMobile"
 
 /* ── Grain noise SVG as a data URI ── */
 const GRAIN_URI = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E")`
@@ -259,6 +260,7 @@ function ChevronRight() {
 
 /* ── Main Auth component ── */
 export default function Auth() {
+  const isMobile                  = useIsMobile()
   const [mode, setMode]           = useState("login")
   const [email, setEmail]         = useState("")
   const [password, setPassword]   = useState("")
@@ -307,8 +309,8 @@ export default function Auth() {
   if (mode === "forgot") {
     return (
       <div style={S.page}>
-        <LeftPanel />
-        <div style={S.right}>
+        {!isMobile && <LeftPanel />}
+        <div style={{ ...S.right, width: isMobile ? '100%' : S.right.width }}>
           <div style={S.formWrapper}>
             <h1 style={S.formTitle}>Reset Password</h1>
 
@@ -368,9 +370,9 @@ export default function Auth() {
   /* ── Login / Sign up view ── */
   return (
     <div style={S.page}>
-      <LeftPanel />
+      {!isMobile && <LeftPanel />}
 
-      <div style={S.right}>
+      <div style={{ ...S.right, width: isMobile ? '100%' : S.right.width }}>
         <div style={S.formWrapper}>
           <h1 style={S.formTitle}>
             {mode === "login" ? "Sign In" : "Create Account"}

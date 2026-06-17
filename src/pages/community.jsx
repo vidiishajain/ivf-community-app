@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../lib/supabase'
 import { motion } from 'framer-motion'
 import { useSpring, animated } from '@react-spring/web'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const FONT = "'Quicksand', system-ui, sans-serif"
 
@@ -92,6 +93,7 @@ function CommunityCard({ c, isJoined, onJoin, onEnter }) {
 // ── Main export ───────────────────────────────────────────────────────────────
 
 export default function Community() {
+  const isMobile                      = useIsMobile()
   const [joined, setJoined]           = useState({})
   const [activeRoom, setActiveRoom]   = useState(null)
   const [messages, setMessages]       = useState(SEEDED_MESSAGES)
@@ -188,8 +190,8 @@ export default function Community() {
 
   // ── List view ─────────────────────────────────────────────────────────────
   return (
-    <div style={{ flex: 1, overflowY: 'auto', padding: '48px 48px 60px 48px', background: '#FFFFFF', fontFamily: FONT }}>
-      <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 8px 0', fontFamily: FONT }}>Communities</h1>
+    <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '24px 16px 60px' : '48px 48px 60px 48px', background: '#FFFFFF', fontFamily: FONT }}>
+      <h1 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 8px 0', fontFamily: FONT }}>Communities</h1>
       <p style={{ color: '#888888', fontSize: 14, marginBottom: 28, fontFamily: FONT }}>Find your people within the journey</p>
 
       <input

@@ -6,6 +6,7 @@ import gsap from 'gsap'
 import { supabase } from '../lib/supabase'
 import { getMatches } from '../lib/matching'
 import ConnectionFeedback from './ConnectionFeedback'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -450,6 +451,7 @@ function ConversationList({ myId, onOpenChat }) {
 // ─── Main Matches export ──────────────────────────────────────────────────────
 
 export default function Matches() {
+  const isMobile                              = useIsMobile()
   const [currentProfile, setCurrentProfile]   = useState(null)
   const [myId, setMyId]                       = useState(null)
   const [matches, setMatches]                 = useState([])
@@ -613,7 +615,9 @@ export default function Matches() {
   }
 
   if (chatTarget) return (
-    <ChatView profile={chatTarget} myId={myId} onBack={() => { setChatTarget(null); checkUnreads() }} />
+    <div style={isMobile ? { position: 'fixed', inset: 0, zIndex: 200, background: '#FFFFFF' } : { height: '100%' }}>
+      <ChatView profile={chatTarget} myId={myId} onBack={() => { setChatTarget(null); checkUnreads() }} />
+    </div>
   )
   if (feedbackTarget) return (
     <ConnectionFeedback
@@ -650,10 +654,10 @@ export default function Matches() {
   }
 
   return (
-    <div style={{ padding: '48px 48px 60px 48px', background: '#FFFFFF', minHeight: '100%', fontFamily: FONT }}>
+    <div style={{ padding: isMobile ? '24px 16px 60px' : '48px 48px 60px 48px', background: '#FFFFFF', minHeight: '100%', fontFamily: FONT }}>
 
       <h1 style={{
-        fontSize: 36,
+        fontSize: isMobile ? 28 : 36,
         fontWeight: 700,
         color: '#111111',
         letterSpacing: '-0.5px',
@@ -794,7 +798,7 @@ export default function Matches() {
 
               {!loading && visible.length > 0 && (
                 <motion.div
-                  style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}
+                  style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 20 }}
                   initial="hidden"
                   animate="visible"
                   variants={{

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useGSAP } from '@gsap/react'
 import gsap from 'gsap'
 import { supabase } from '../lib/supabase'
+import { useIsMobile } from '../hooks/useIsMobile'
 
 const FONT = "'Quicksand', system-ui, sans-serif"
 
@@ -59,6 +60,7 @@ const cardVariants = {
 }
 
 export default function Home({ session, onNavigate }) {
+  const isMobile                            = useIsMobile()
   const [profile, setProfile]               = useState(null)
   const [connectionCount, setConnectionCount] = useState(0)
   const [pendingCount, setPendingCount]     = useState(0)
@@ -132,7 +134,7 @@ export default function Home({ session, onNavigate }) {
 
   // About modal view
   if (showAbout) return (
-    <div style={{ padding: '48px 48px 60px', fontFamily: FONT }}>
+    <div style={{ padding: isMobile ? '24px 16px 60px' : '48px 48px 60px', fontFamily: FONT }}>
       <button
         onClick={() => setShowAbout(false)}
         style={{ background: 'none', border: 'none', color: '#5B4BD4', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 36, padding: 0, fontFamily: FONT }}>
@@ -171,12 +173,12 @@ export default function Home({ session, onNavigate }) {
 
   // Main home view
   return (
-    <div style={{ padding: '48px 48px 60px', fontFamily: FONT }}>
+    <div style={{ padding: isMobile ? '24px 16px 60px' : '48px 48px 60px', fontFamily: FONT }}>
 
       {/* Heading */}
       <h1
         ref={headingRef}
-        style={{ fontSize: 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 8px', fontFamily: FONT }}
+        style={{ fontSize: isMobile ? 26 : 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 8px', fontFamily: FONT }}
       >
         {getGreeting(firstName)}
       </h1>
@@ -189,7 +191,7 @@ export default function Home({ session, onNavigate }) {
         initial="hidden"
         animate="visible"
         variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } }}
-        style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 640 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: isMobile ? '100%' : 640 }}
       >
 
         {/* Stage card */}
