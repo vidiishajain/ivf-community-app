@@ -249,9 +249,9 @@ export default function Questionnaire({ session, onComplete }) {
 
     if (q.type === "dropdown") return (
       <select value={val || ""} onChange={e => setAnswer(q.id, e.target.value)}
-        style={{ padding: "12px 16px", borderRadius: 8, border: `1.5px solid ${P.mid}`, fontSize: 14, background: "white", minWidth: 260 }}>
-        <option value="">Select your region...</option>
-        {q.options.map(o => <option key={o} value={o}>{o}</option>)}
+        style={{ padding: "12px 16px", borderRadius: 8, border: `1.5px solid ${P.mid}`, fontSize: 14, background: "white", color: P.text, minWidth: 260, cursor: "pointer" }}>
+        <option value="" style={{ color: P.muted }}>Select your region...</option>
+        {q.options.map(o => <option key={o} value={o} style={{ color: P.text }}>{o}</option>)}
       </select>
     )
 
