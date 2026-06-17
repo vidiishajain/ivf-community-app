@@ -307,7 +307,7 @@ export default function Questionnaire({ session, onComplete }) {
   }
 
   return (
-    <div style={{ background: P.bg, minHeight: "100vh", padding: "24px 16px" }}>
+    <div style={{ background: P.bg, height: "100%", overflowY: "auto", padding: "24px 16px" }}>
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
 
         {/* Progress */}
