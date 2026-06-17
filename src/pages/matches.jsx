@@ -86,9 +86,9 @@ const HOBBY_LABELS = {
   social:     'socialising',
 }
 const ICEBREAKERS = [
-  "Hi! It's really nice to connect with someone at a similar stage 🌸 How are you finding things at the moment?",
+  "Hi! It's really nice to connect with someone at a similar stage How are you finding things at the moment?",
   "Hey! I saw we matched — it feels reassuring to find someone who gets it. How are you doing?",
-  "Hi there 💜 How are you holding up through everything?",
+  "Hi there. How are you holding up through everything?",
   "Hello! It helps so much to talk to someone who actually understands. How's your journey going?",
   "Hi! I'd love to hear how you're navigating all of this.",
 ]
@@ -247,53 +247,76 @@ function ChatView({ profile, myId, onBack }) {
   const showIcebreakers = !loadingMsgs && messages.length === 0
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
-      <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: 'var(--sidebar)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-        <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 22 }}>←</button>
-        <div style={{ width: 38, height: 38, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0 }}>{ini}</div>
-        <div style={{ flex: 1 }}>
-          <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: 600, margin: 0, fontFamily: FONT }}>{profile.display_name}</p>
-          <p style={{ color: 'var(--text)', fontSize: 11, opacity: 0.5, margin: 0, fontFamily: FONT }}>Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}</p>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{ width: 7, height: 7, borderRadius: '50%', background: '#4CAF50' }} />
-          <span style={{ fontSize: 11, color: 'var(--text)', opacity: 0.5, fontFamily: FONT }}>Live</span>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', background: '#FFFFFF' }}>
+
+      {/* Header */}
+      <div style={{ padding: '16px 24px', borderBottom: '1px solid #EBEBEB', background: '#FFFFFF', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+        <button
+          onClick={onBack}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#888888', padding: '4px 2px', display: 'flex', alignItems: 'center', flexShrink: 0 }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+        <div style={{
+          width: 40, height: 40, borderRadius: '50%',
+          background: `linear-gradient(145deg, ${colorPair[0]}, ${colorPair[1]})`,
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 14, fontWeight: 700, color: '#fff', flexShrink: 0,
+        }}>{ini}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ color: '#111111', fontSize: 15, fontWeight: 600, margin: 0, fontFamily: FONT }}>{profile.display_name}</p>
+          <p style={{ color: '#888888', fontSize: 11, margin: 0, fontFamily: FONT }}>Stage {profile.ivf_stage} · {STAGE_LABELS[profile.ivf_stage]}</p>
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: 'auto', padding: '20px 16px', paddingBottom: `${bottomOffset + 60}px` }}>
+      {/* Messages */}
+      <div style={{ flex: 1, overflowY: 'auto', padding: '24px 24px 12px' }}>
         {loadingMsgs && (
           <div style={{ textAlign: 'center', padding: '40px 0' }}>
-            <p style={{ color: 'var(--text)', opacity: 0.5, fontSize: 14, fontFamily: FONT }}>Loading…</p>
+            <p style={{ color: '#888888', fontSize: 14, fontFamily: FONT }}>Loading…</p>
           </div>
         )}
+
         {showIcebreakers && (
-          <div style={{ marginBottom: 24 }}>
-            <p style={{ color: 'var(--text)', fontSize: 12, opacity: 0.55, marginBottom: 12, textAlign: 'center', fontFamily: FONT }}>
-              You're connected 🌸 Start the conversation:
+          <div style={{ marginBottom: 28 }}>
+            <p style={{ color: '#888888', fontSize: 12, marginBottom: 12, textAlign: 'center', fontFamily: FONT }}>
+              You're connected. Start the conversation:
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {ICEBREAKERS.slice(0, 3).map((ic, i) => (
                 <button key={i} onClick={() => setInput(ic)}
-                  style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '12px 14px', color: 'var(--text)', fontSize: 13, textAlign: 'left', cursor: 'pointer', lineHeight: 1.55, fontFamily: FONT }}>
+                  style={{ background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 12, padding: '12px 16px', color: '#555555', fontSize: 13, textAlign: 'left', cursor: 'pointer', lineHeight: 1.6, fontFamily: FONT }}>
                   {ic}
                 </button>
               ))}
             </div>
           </div>
         )}
+
         {messages.map(msg => {
           const isMe = msg.from === 'me'
           return (
-            <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: 14 }}>
+            <div key={msg.id} style={{ display: 'flex', justifyContent: isMe ? 'flex-end' : 'flex-start', marginBottom: 14, alignItems: 'flex-end', gap: 8 }}>
               {!isMe && (
-                <div style={{ width: 32, height: 32, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, color: '#fff', flexShrink: 0, marginRight: 8, alignSelf: 'flex-end' }}>{ini}</div>
+                <div style={{
+                  width: 30, height: 30, borderRadius: '50%',
+                  background: `linear-gradient(145deg, ${colorPair[0]}, ${colorPair[1]})`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: 11, fontWeight: 700, color: '#fff', flexShrink: 0,
+                }}>{ini}</div>
               )}
-              <div style={{ maxWidth: '72%' }}>
-                <div style={{ padding: '10px 14px', borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px', background: isMe ? 'var(--accent)' : 'var(--code-bg)', border: isMe ? 'none' : '1px solid var(--border)' }}>
-                  <p style={{ color: isMe ? '#fff' : 'var(--text-h)', fontSize: 14, lineHeight: 1.5, margin: 0, fontFamily: FONT }}>{msg.text}</p>
+              <div style={{ maxWidth: '68%' }}>
+                <div style={{
+                  padding: '10px 14px',
+                  borderRadius: isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
+                  background: isMe ? '#5B4BD4' : '#F7F7FA',
+                  border: isMe ? 'none' : '1.5px solid #EBEBEB',
+                }}>
+                  <p style={{ color: isMe ? '#fff' : '#111111', fontSize: 14, lineHeight: 1.55, margin: 0, fontFamily: FONT }}>{msg.text}</p>
                 </div>
-                <p style={{ color: 'var(--text)', fontSize: 10, opacity: 0.4, margin: '3px 4px 0', textAlign: isMe ? 'right' : 'left', fontFamily: FONT }}>{msg.time}</p>
+                <p style={{ color: '#AAAAAA', fontSize: 10, margin: '3px 4px 0', textAlign: isMe ? 'right' : 'left', fontFamily: FONT }}>{msg.time}</p>
               </div>
             </div>
           )
@@ -301,14 +324,25 @@ function ChatView({ profile, myId, onBack }) {
         <div ref={bottomRef} />
       </div>
 
-      <div style={{ position: 'fixed', left: 0, right: 0, bottom: `${bottomOffset}px`, padding: '12px 16px', background: 'var(--sidebar)', borderTop: '1px solid var(--border)', display: 'flex', gap: 10, transition: 'bottom 0.15s ease' }}>
-        <input ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
+      {/* Input */}
+      <div style={{ padding: '12px 24px', background: '#FFFFFF', borderTop: '1px solid #EBEBEB', display: 'flex', gap: 10, flexShrink: 0 }}>
+        <input
+          ref={inputRef}
+          value={input}
+          onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && send()}
           onFocus={() => setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 350)}
           placeholder={`Message ${firstName}…`}
-          style={{ flex: 1, background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', color: 'var(--text-h)', fontSize: 14, outline: 'none', fontFamily: FONT }} />
-        <button onClick={() => send()} style={{ background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 10, padding: '10px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: FONT }}>Send</button>
+          style={{ flex: 1, background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 10, padding: '10px 14px', color: '#111111', fontSize: 14, outline: 'none', fontFamily: FONT }}
+        />
+        <button
+          onClick={() => send()}
+          style={{ background: '#5B4BD4', border: 'none', color: '#fff', borderRadius: 10, padding: '10px 20px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: FONT }}
+        >
+          Send
+        </button>
       </div>
+
     </div>
   )
 }
@@ -363,15 +397,19 @@ function ConversationList({ myId, onOpenChat }) {
 
   if (loading) return (
     <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-      <p style={{ color: 'var(--text)', opacity: 0.6, fontFamily: FONT }}>Loading conversations…</p>
+      <p style={{ color: '#888888', fontFamily: FONT }}>Loading conversations…</p>
     </div>
   )
 
   if (conversations.length === 0) return (
-    <div style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 18, padding: '48px 24px', textAlign: 'center' }}>
-      <div style={{ fontSize: 36, marginBottom: 12 }}>💬</div>
-      <p style={{ color: 'var(--text-h)', fontSize: 16, fontWeight: 600, marginBottom: 8, fontFamily: FONT }}>No conversations yet</p>
-      <p style={{ color: 'var(--text)', fontSize: 14, opacity: 0.7, margin: 0, fontFamily: FONT }}>Once a connection is accepted, your chat will appear here.</p>
+    <div style={{ background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 18, padding: '48px 24px', textAlign: 'center' }}>
+      <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'rgba(91,75,212,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#5B4BD4" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
+      </div>
+      <p style={{ color: '#111111', fontSize: 16, fontWeight: 600, marginBottom: 8, fontFamily: FONT }}>No conversations yet</p>
+      <p style={{ color: '#888888', fontSize: 14, margin: 0, fontFamily: FONT }}>Once a connection is accepted, your chat will appear here.</p>
     </div>
   )
 
@@ -379,7 +417,6 @@ function ConversationList({ myId, onOpenChat }) {
     <div>
       {conversations.map(({ profile, lastMessage }) => {
         const colorPair = getAvatarColor(profile.display_name)
-        const color     = colorPair[0]
         const ini       = getInitials(profile.display_name)
         const unread    = isUnread(myId, lastMessage)
         const preview   = lastMessage
@@ -389,17 +426,17 @@ function ConversationList({ myId, onOpenChat }) {
 
         return (
           <button key={profile.id} onClick={() => onOpenChat(profile)}
-            style={{ width: '100%', background: 'var(--code-bg)', border: `1px solid ${unread ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left' }}>
+            style={{ width: '100%', background: '#F7F7FA', border: `1.5px solid ${unread ? '#5B4BD4' : '#EBEBEB'}`, borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14, cursor: 'pointer', textAlign: 'left', boxSizing: 'border-box' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
-              <div style={{ width: 48, height: 48, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff' }}>{ini}</div>
-              {unread && <div style={{ position: 'absolute', top: 0, right: 0, width: 12, height: 12, borderRadius: '50%', background: 'var(--accent)', border: '2px solid var(--bg)' }} />}
+              <div style={{ width: 48, height: 48, borderRadius: '50%', background: `linear-gradient(145deg, ${colorPair[0]}, ${colorPair[1]})`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 700, color: '#fff' }}>{ini}</div>
+              {unread && <div style={{ position: 'absolute', top: 1, right: 1, width: 11, height: 11, borderRadius: '50%', background: '#5B4BD4', border: '2px solid #F7F7FA' }} />}
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: unread ? 700 : 600, margin: 0, fontFamily: FONT }}>{profile.display_name}</p>
-                {timeStr && <span style={{ color: unread ? 'var(--accent)' : 'var(--text)', fontSize: 11, opacity: unread ? 1 : 0.45, flexShrink: 0, fontWeight: unread ? 600 : 400, fontFamily: FONT }}>{timeStr}</span>}
+                <p style={{ color: '#111111', fontSize: 15, fontWeight: unread ? 700 : 600, margin: 0, fontFamily: FONT }}>{profile.display_name}</p>
+                {timeStr && <span style={{ color: unread ? '#5B4BD4' : '#AAAAAA', fontSize: 11, flexShrink: 0, fontWeight: unread ? 600 : 400, fontFamily: FONT }}>{timeStr}</span>}
               </div>
-              <p style={{ color: unread ? 'var(--text-h)' : 'var(--text)', fontSize: 13, opacity: lastMessage ? (unread ? 0.9 : 0.65) : 0.4, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: lastMessage ? 'normal' : 'italic', fontWeight: unread ? 500 : 400, fontFamily: FONT }}>
+              <p style={{ color: unread ? '#111111' : '#888888', fontSize: 13, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontStyle: lastMessage ? 'normal' : 'italic', fontWeight: unread ? 500 : 400, fontFamily: FONT }}>
                 {preview}
               </p>
             </div>
@@ -419,7 +456,8 @@ export default function Matches() {
   const [loading, setLoading]                 = useState(true)
   const [connections, setConnections]         = useState({})
   const [pendingSent, setPendingSent]         = useState({})
-  const [pendingReceived, setPendingReceived] = useState([])
+  const [pendingReceived, setPendingReceived]       = useState([])
+  const [pendingReceivedMap, setPendingReceivedMap] = useState({})
   const [connecting, setConnecting]           = useState({})
   const [removed, setRemoved]                 = useState({})
   const [rated, setRated]                     = useState({})
@@ -499,8 +537,12 @@ export default function Matches() {
           profile: (reqProfiles || []).find(pr => pr.id === p.requesterId) || null,
         })).filter(p => p.profile !== null)
         setPendingReceived(enriched)
+        const recMap = {}
+        enriched.forEach(p => { recMap[p.profile.id] = p.connectionId })
+        setPendingReceivedMap(recMap)
       } else {
         setPendingReceived([])
+        setPendingReceivedMap({})
       }
 
       const { data: existingRatings } = await supabase
@@ -537,6 +579,7 @@ export default function Matches() {
       if (!error) {
         setConnections(prev => ({ ...prev, [requesterId]: true }))
         setPendingReceived(prev => prev.filter(p => p.connectionId !== connectionId))
+        setPendingReceivedMap(prev => { const n = { ...prev }; delete n[requesterId]; return n })
       }
     } catch (e) { console.error('Accept error:', e) }
   }
@@ -546,19 +589,27 @@ export default function Matches() {
       const { error } = await supabase
         .from('connections').delete().eq('id', connectionId)
       if (!error) {
+        const entry = pendingReceived.find(p => p.connectionId === connectionId)
+        if (entry) setPendingReceivedMap(m => { const n = { ...m }; delete n[entry.profile.id]; return n })
         setPendingReceived(prev => prev.filter(p => p.connectionId !== connectionId))
       }
     } catch (e) { console.error('Decline error:', e) }
   }
 
   async function handleThumbsUp(profileId) {
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('feedback').insert({ rater_id: user.id, rated_id: profileId, score: 5 })
+    try {
+      const { error } = await supabase.from('feedback').insert({ rater_id: myId, rated_id: profileId, score: 5 })
+      if (!error) setRated(prev => ({ ...prev, [profileId]: true }))
+    } catch (e) { console.error('ThumbsUp error:', e) }
   }
   async function handleThumbsDown(profileId) {
-    const { data: { user } } = await supabase.auth.getUser()
-    await supabase.from('feedback').insert({ rater_id: user.id, rated_id: profileId, score: 1 })
-    setRemoved(prev => ({ ...prev, [profileId]: true }))
+    try {
+      const { error } = await supabase.from('feedback').insert({ rater_id: myId, rated_id: profileId, score: 1 })
+      if (!error) {
+        setRated(prev => ({ ...prev, [profileId]: true }))
+        setRemoved(prev => ({ ...prev, [profileId]: true }))
+      }
+    } catch (e) { console.error('ThumbsDown error:', e) }
   }
 
   if (chatTarget) return (
@@ -622,7 +673,7 @@ export default function Matches() {
         marginBottom: 28,
         position: 'relative',
       }}>
-        {(['matches', 'messages'] as const).map(v => (
+        {['matches', 'messages'].map(v => (
           <button
             key={v}
             onClick={() => setView(v)}
@@ -681,32 +732,35 @@ export default function Matches() {
             <div>
               {pendingReceived.length > 0 && (
                 <div style={{ marginBottom: 28 }}>
-                  <p style={{ color: 'var(--text)', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.5, marginBottom: 14, fontFamily: FONT }}>
+                  <p style={{ color: '#888888', fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: 14, fontFamily: FONT }}>
                     Connection Requests
                   </p>
-                  {pendingReceived.map(({ connectionId, profile: req }) => (
-                    <div key={connectionId} style={{ background: 'var(--code-bg)', border: '1px solid var(--accent)', borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14 }}>
-                      <div style={{ width: 46, height: 46, borderRadius: '50%', background: getAvatarColor(req.display_name)[0], flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#fff' }}>
-                        {getInitials(req.display_name)}
+                  {pendingReceived.map(({ connectionId, profile: req }) => {
+                    const reqColorPair = getAvatarColor(req.display_name)
+                    return (
+                      <div key={connectionId} style={{ background: '#F7F7FA', border: '1.5px solid #5B4BD4', borderRadius: 16, padding: '16px', marginBottom: 12, display: 'flex', alignItems: 'center', gap: 14 }}>
+                        <div style={{ width: 46, height: 46, borderRadius: '50%', background: `linear-gradient(145deg, ${reqColorPair[0]}, ${reqColorPair[1]})`, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 700, color: '#fff' }}>
+                          {getInitials(req.display_name)}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ color: '#111111', fontSize: 15, fontWeight: 600, margin: '0 0 3px', fontFamily: FONT }}>{req.display_name}</p>
+                          <p style={{ color: '#888888', fontSize: 12, margin: 0, fontFamily: FONT }}>
+                            Stage {req.ivf_stage} · {STAGE_LABELS[req.ivf_stage]}
+                          </p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, flexShrink: 0 }}>
+                          <button onClick={() => handleAccept(connectionId, req.id)}
+                            style={{ padding: '8px 18px', background: '#5B4BD4', border: 'none', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}>
+                            Accept
+                          </button>
+                          <button onClick={() => handleDecline(connectionId)}
+                            style={{ padding: '8px 18px', background: 'transparent', border: '1.5px solid #EBEBEB', color: '#555555', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontFamily: FONT }}>
+                            Decline
+                          </button>
+                        </div>
                       </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: 600, margin: '0 0 3px', fontFamily: FONT }}>{req.display_name}</p>
-                        <p style={{ color: 'var(--text)', fontSize: 12, opacity: 0.55, margin: 0, fontFamily: FONT }}>
-                          Stage {req.ivf_stage} · {STAGE_LABELS[req.ivf_stage]}
-                        </p>
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 7, flexShrink: 0 }}>
-                        <button onClick={() => handleAccept(connectionId, req.id)}
-                          style={{ padding: '8px 18px', background: 'var(--accent)', border: 'none', color: '#fff', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT }}>
-                          Accept
-                        </button>
-                        <button onClick={() => handleDecline(connectionId)}
-                          style={{ padding: '8px 18px', background: 'transparent', border: '1px solid var(--border)', color: 'var(--text)', borderRadius: 8, fontSize: 13, cursor: 'pointer', fontFamily: FONT }}>
-                          Decline
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
               <ConversationList myId={myId} onOpenChat={(profile) => setChatTarget(profile)} />
@@ -750,9 +804,10 @@ export default function Matches() {
                 >
                   <AnimatePresence>
                     {visible.map(({ profile, matchPct }) => {
-                      const isAccepted   = !!connections[profile.id]
-                      const isPending    = !!pendingSent[profile.id]
-                      const isConnecting = connecting[profile.id]
+                      const isAccepted        = !!connections[profile.id]
+                      const isPending         = !!pendingSent[profile.id]
+                      const incomingConnId    = pendingReceivedMap[profile.id] || null
+                      const isConnecting      = connecting[profile.id]
                       const hasRated     = rated[profile.id]
                       const pct          = Math.round(matchPct)
                       const colorPair    = getAvatarColor(profile.display_name)
@@ -824,7 +879,7 @@ export default function Matches() {
                             {/* Action row */}
                             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 'auto' }}>
                               {hasRated ? (
-                                <span style={{ fontSize: 13, color: '#5B4BD4', fontWeight: 600, fontFamily: FONT }}>Rated ✓</span>
+                                <span style={{ fontSize: 13, color: '#5B4BD4', fontWeight: 600, fontFamily: FONT }}>Shared</span>
                               ) : isAccepted ? (
                                 <>
                                   <button
@@ -837,7 +892,7 @@ export default function Matches() {
                                       fontFamily: FONT,
                                     }}
                                   >
-                                    💬 Message {profile.display_name?.split(' ')[0]}
+                                    Message {profile.display_name?.split(' ')[0]}
                                   </button>
                                   {!hasRated && (
                                     <button
@@ -849,9 +904,35 @@ export default function Matches() {
                                         fontSize: 13, cursor: 'pointer', fontFamily: FONT,
                                       }}
                                     >
-                                      Rate
+                                      How has it been?
                                     </button>
                                   )}
+                                </>
+                              ) : incomingConnId ? (
+                                <>
+                                  <button
+                                    onClick={() => handleAccept(incomingConnId, profile.id)}
+                                    style={{
+                                      flex: 1, height: 42,
+                                      background: '#5B4BD4', color: '#FFFFFF',
+                                      border: 'none', borderRadius: 999,
+                                      fontSize: 14, fontWeight: 600, cursor: 'pointer',
+                                      fontFamily: FONT,
+                                    }}
+                                  >
+                                    Accept
+                                  </button>
+                                  <button
+                                    onClick={() => handleDecline(incomingConnId)}
+                                    style={{
+                                      padding: '0 18px', height: 42,
+                                      background: 'transparent', border: '1.5px solid #DEDEDE',
+                                      borderRadius: 999, color: '#555555',
+                                      fontSize: 13, cursor: 'pointer', fontFamily: FONT,
+                                    }}
+                                  >
+                                    Decline
+                                  </button>
                                 </>
                               ) : isPending ? (
                                 <button
@@ -893,13 +974,13 @@ export default function Matches() {
                                       onClick={() => handleThumbsUp(profile.id)}
                                       style={thumbStyle}
                                     >
-                                      👍
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
                                     </ThumbButton>
                                     <ThumbButton
                                       onClick={() => handleThumbsDown(profile.id)}
                                       style={thumbStyle}
                                     >
-                                      👎
+                                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3H10z"/><path d="M17 2h2.67A2.31 2.31 0 0 1 22 4v7a2.31 2.31 0 0 1-2.33 2H17"/></svg>
                                     </ThumbButton>
                                   </div>
                                 </>

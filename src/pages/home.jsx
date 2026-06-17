@@ -48,9 +48,9 @@ function getDailyLine() {
 
 function getGreeting(name) {
   const hour = new Date().getHours()
-  if (hour < 12) return `Good morning, ${name} 🌤️`
-  if (hour < 17) return `Good afternoon, ${name} ☀️`
-  return `Good evening, ${name} 🌙`
+  if (hour < 12) return `Good morning, ${name}`
+  if (hour < 17) return `Good afternoon, ${name}`
+  return `Good evening, ${name}`
 }
 
 const cardVariants = {
@@ -68,17 +68,17 @@ export default function Home({ session, onNavigate }) {
   const [selectedStage, setSelectedStage]   = useState(null)
   const [saving, setSaving]                 = useState(false)
 
-  const greetingRef = useRef(null)
+  const headingRef = useRef(null)
 
   useGSAP(() => {
-    if (!greetingRef.current) return
-    gsap.from(greetingRef.current, {
+    if (!headingRef.current) return
+    gsap.from(headingRef.current, {
       opacity: 0,
       y: -14,
       duration: 0.45,
       ease: 'power3.out',
     })
-  }, [loading])
+  }, [loading, showAbout])
 
   useEffect(() => {
     async function fetchData() {
@@ -122,42 +122,47 @@ export default function Home({ session, onNavigate }) {
 
   if (loading) return (
     <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-      <p style={{ color: 'var(--text)', opacity: 0.6, fontFamily: FONT }}>Loading…</p>
+      <p style={{ color: '#888888', fontFamily: FONT }}>Loading…</p>
     </div>
   )
 
-  const firstName  = (profile?.display_name || '').split(' ')[0]
-  const stage      = profile?.ivf_stage
-  const dailyLine  = getDailyLine()
+  const firstName = (profile?.display_name || '').split(' ')[0]
+  const stage     = profile?.ivf_stage
+  const dailyLine = getDailyLine()
 
   // About modal view
   if (showAbout) return (
-    <div style={{ padding: '28px 20px', fontFamily: FONT }}>
+    <div style={{ padding: '48px 48px 60px', fontFamily: FONT }}>
       <button
         onClick={() => setShowAbout(false)}
-        style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 28, padding: 0, fontFamily: FONT }}>
-        ← Back
+        style={{ background: 'none', border: 'none', color: '#5B4BD4', cursor: 'pointer', fontSize: 14, fontWeight: 600, marginBottom: 36, padding: 0, fontFamily: FONT }}>
+        Back
       </button>
-      <div style={{ fontSize: 34, marginBottom: 14 }}>🔥</div>
-      <h2 style={{ color: 'var(--text-h)', fontSize: 24, fontWeight: 700, marginBottom: 24, lineHeight: 1.3, fontFamily: FONT }}>
+
+      <h1 style={{ fontSize: 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 8px', fontFamily: FONT }}>
         Why this space is yours
-      </h2>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-        <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.75, margin: 0, fontFamily: FONT }}>
-          IVF can feel isolating. Clinics focus on the medical. But the emotional weight is real, and it's a lot to carry alone.
-        </p>
-        <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.75, margin: 0, fontFamily: FONT }}>
-          Ember matches you with other women on a similar journey. Same stage. Similar path. People who actually get it.
-        </p>
-        <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.75, margin: 0, fontFamily: FONT }}>
-          You can connect, chat privately, join communities, find things to help you unwind, and read honest articles about what IVF really involves.
-        </p>
-        <p style={{ color: 'var(--text)', fontSize: 15, lineHeight: 1.75, margin: 0, fontFamily: FONT }}>
-          No forums. No strangers. Just people who understand because they're living it too.
-        </p>
-        <div style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 14, padding: '22px 20px', marginTop: 4, textAlign: 'center' }}>
-          <p style={{ color: 'var(--text-h)', fontSize: 17, fontWeight: 700, margin: 0, fontFamily: FONT }}>
-            This space is yours. 🔥
+      </h1>
+      <p style={{ color: '#888888', fontSize: 14, marginBottom: 36, fontFamily: FONT }}>
+        What Ember is for
+      </p>
+
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 640 }}>
+        {[
+          "IVF can feel isolating. Clinics focus on the medical. But the emotional weight is real, and it's a lot to carry alone.",
+          "Ember matches you with other women on a similar journey. Same stage. Similar path. People who actually get it.",
+          "You can connect, chat privately, join communities, find things to help you unwind, and read honest articles about what IVF really involves.",
+          "No forums. No strangers. Just people who understand because they're living it too.",
+        ].map((text, i) => (
+          <div key={i} style={{ background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 16, padding: '20px 22px' }}>
+            <p style={{ color: '#555555', fontSize: 15, lineHeight: 1.75, margin: 0, fontFamily: FONT }}>
+              {text}
+            </p>
+          </div>
+        ))}
+
+        <div style={{ background: '#F7F7FA', border: '1.5px solid #5B4BD4', borderRadius: 16, padding: '22px', textAlign: 'center', marginTop: 4 }}>
+          <p style={{ color: '#111111', fontSize: 17, fontWeight: 700, margin: 0, fontFamily: FONT }}>
+            This space is yours.
           </p>
         </div>
       </div>
@@ -166,16 +171,16 @@ export default function Home({ session, onNavigate }) {
 
   // Main home view
   return (
-    <div style={{ padding: '48px 48px 60px 48px', fontFamily: FONT }}>
+    <div style={{ padding: '48px 48px 60px', fontFamily: FONT }}>
 
-      {/* Greeting */}
-      <h2
-        ref={greetingRef}
-        style={{ color: 'var(--text-h)', fontSize: 28, fontWeight: 700, marginBottom: 6, letterSpacing: '-0.5px', fontFamily: FONT }}
+      {/* Heading */}
+      <h1
+        ref={headingRef}
+        style={{ fontSize: 36, fontWeight: 700, color: '#111111', letterSpacing: '-0.5px', margin: '0 0 8px', fontFamily: FONT }}
       >
         {getGreeting(firstName)}
-      </h2>
-      <p style={{ color: 'var(--text)', fontSize: 14, opacity: 0.6, marginBottom: 32, fontStyle: 'italic', fontFamily: FONT }}>
+      </h1>
+      <p style={{ color: '#888888', fontSize: 14, marginBottom: 36, fontStyle: 'italic', fontFamily: FONT }}>
         "{dailyLine}"
       </p>
 
@@ -184,24 +189,24 @@ export default function Home({ session, onNavigate }) {
         initial="hidden"
         animate="visible"
         variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } } }}
-        style={{ display: 'flex', flexDirection: 'column', gap: 14 }}
+        style={{ display: 'flex', flexDirection: 'column', gap: 14, maxWidth: 640 }}
       >
 
         {/* Stage card */}
         {stage && (
           <motion.div variants={cardVariants}>
-            <div style={{ background: 'var(--code-bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px' }}>
+            <div style={{ background: '#F7F7FA', border: '1.5px solid #EBEBEB', borderRadius: 16, padding: '20px 22px' }}>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--accent)', fontFamily: FONT }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: '#5B4BD4', fontFamily: FONT }}>
                   Your stage
                 </span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 12, color: 'var(--text)', opacity: 0.5, fontFamily: FONT }}>{stage} of 12</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <span style={{ fontSize: 12, color: '#888888', fontFamily: FONT }}>{stage} of 12</span>
                   {!editingStage && (
                     <button
                       onClick={() => { setSelectedStage(stage); setEditingStage(true) }}
-                      style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: FONT }}>
+                      style={{ background: 'none', border: 'none', color: '#5B4BD4', fontSize: 12, fontWeight: 600, cursor: 'pointer', padding: 0, fontFamily: FONT }}>
                       Update
                     </button>
                   )}
@@ -210,13 +215,13 @@ export default function Home({ session, onNavigate }) {
 
               {!editingStage && (
                 <>
-                  <div style={{ height: 4, background: 'var(--border)', borderRadius: 4, marginBottom: 14 }}>
-                    <div style={{ height: '100%', width: `${(stage / 12) * 100}%`, background: 'var(--accent)', borderRadius: 4, transition: 'width 0.6s ease' }} />
+                  <div style={{ height: 3, background: '#EBEBEB', borderRadius: 4, marginBottom: 16 }}>
+                    <div style={{ height: '100%', width: `${(stage / 12) * 100}%`, background: '#5B4BD4', borderRadius: 4, transition: 'width 0.6s ease' }} />
                   </div>
-                  <p style={{ color: 'var(--text-h)', fontSize: 16, fontWeight: 600, margin: '0 0 8px', fontFamily: FONT }}>
+                  <p style={{ color: '#111111', fontSize: 16, fontWeight: 600, margin: '0 0 6px', fontFamily: FONT }}>
                     Stage {stage} · {STAGE_LABELS[stage]}
                   </p>
-                  <p style={{ color: 'var(--text)', fontSize: 14, lineHeight: 1.7, margin: 0, opacity: 0.85, fontFamily: FONT }}>
+                  <p style={{ color: '#555555', fontSize: 14, lineHeight: 1.7, margin: 0, fontFamily: FONT }}>
                     {STAGE_SENTENCES[stage]}
                   </p>
                 </>
@@ -224,7 +229,7 @@ export default function Home({ session, onNavigate }) {
 
               {editingStage && (
                 <div>
-                  <p style={{ color: 'var(--text)', fontSize: 13, opacity: 0.7, marginBottom: 14, fontFamily: FONT }}>
+                  <p style={{ color: '#888888', fontSize: 13, marginBottom: 14, fontFamily: FONT }}>
                     Which stage are you at now?
                   </p>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 14 }}>
@@ -233,9 +238,9 @@ export default function Home({ session, onNavigate }) {
                         style={{
                           padding: '10px 0',
                           borderRadius: 10,
-                          border: `1px solid ${selectedStage === s ? 'var(--accent)' : 'var(--border)'}`,
-                          background: selectedStage === s ? 'var(--accent)' : 'transparent',
-                          color: selectedStage === s ? '#fff' : 'var(--text)',
+                          border: `1.5px solid ${selectedStage === s ? '#5B4BD4' : '#EBEBEB'}`,
+                          background: selectedStage === s ? '#5B4BD4' : 'transparent',
+                          color: selectedStage === s ? '#fff' : '#555555',
                           fontSize: 15,
                           fontWeight: selectedStage === s ? 700 : 400,
                           cursor: 'pointer',
@@ -246,16 +251,16 @@ export default function Home({ session, onNavigate }) {
                       </button>
                     ))}
                   </div>
-                  <p style={{ color: 'var(--text-h)', fontSize: 13, fontWeight: 600, marginBottom: 16, minHeight: 20, fontFamily: FONT }}>
+                  <p style={{ color: '#111111', fontSize: 13, fontWeight: 600, marginBottom: 16, minHeight: 20, fontFamily: FONT }}>
                     {selectedStage ? `Stage ${selectedStage} · ${STAGE_LABELS[selectedStage]}` : ''}
                   </p>
                   <div style={{ display: 'flex', gap: 10 }}>
                     <button onClick={handleUpdateStage} disabled={saving || !selectedStage}
-                      style={{ flex: 1, background: 'var(--accent)', border: 'none', borderRadius: 10, padding: '11px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: FONT }}>
+                      style={{ flex: 1, background: '#5B4BD4', border: 'none', borderRadius: 10, padding: '11px', color: '#fff', fontSize: 14, fontWeight: 600, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, fontFamily: FONT }}>
                       {saving ? 'Saving…' : 'Save'}
                     </button>
                     <button onClick={() => setEditingStage(false)}
-                      style={{ flex: 1, background: 'transparent', border: '1px solid var(--border)', borderRadius: 10, padding: '11px', color: 'var(--text)', fontSize: 14, cursor: 'pointer', fontFamily: FONT }}>
+                      style={{ flex: 1, background: 'transparent', border: '1.5px solid #EBEBEB', borderRadius: 10, padding: '11px', color: '#555555', fontSize: 14, cursor: 'pointer', fontFamily: FONT }}>
                       Cancel
                     </button>
                   </div>
@@ -270,39 +275,53 @@ export default function Home({ session, onNavigate }) {
         <motion.div variants={cardVariants}>
           <div
             onClick={() => onNavigate?.('match')}
-            style={{ background: 'var(--code-bg)', border: `1px solid ${pendingCount > 0 ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 16, padding: '20px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            style={{
+              background: '#F7F7FA',
+              border: `1.5px solid ${pendingCount > 0 ? '#5B4BD4' : '#EBEBEB'}`,
+              borderRadius: 16,
+              padding: '20px 22px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+            }}>
             <div>
-              <p style={{ color: 'var(--text-h)', fontSize: 15, fontWeight: 600, margin: '0 0 6px', fontFamily: FONT }}>
+              <p style={{ color: '#111111', fontSize: 15, fontWeight: 600, margin: '0 0 5px', fontFamily: FONT }}>
                 {pendingCount > 0
                   ? `You have ${pendingCount} connection request${pendingCount > 1 ? 's' : ''}`
                   : connectionCount > 0
                     ? `You're connected with ${connectionCount} ${connectionCount === 1 ? 'person' : 'people'}`
                     : 'Your matches are ready'}
               </p>
-              <p style={{ color: 'var(--text)', fontSize: 13, opacity: 0.7, margin: 0, lineHeight: 1.6, fontFamily: FONT }}>
+              <p style={{ color: '#888888', fontSize: 13, margin: 0, lineHeight: 1.6, fontFamily: FONT }}>
                 {pendingCount > 0
-                  ? 'Head to Messages to accept or decline.'
+                  ? 'Head to Matches to accept or decline.'
                   : connectionCount > 0
                     ? 'Check in with someone today. A small message goes a long way.'
                     : 'Meet someone on the same path as you.'}
               </p>
             </div>
-            <span style={{ color: 'var(--accent)', fontSize: 20, flexShrink: 0 }}>→</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B4BD4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
           </div>
         </motion.div>
 
-        {/* About button */}
+        {/* About */}
         <motion.div variants={cardVariants}>
           <button
             onClick={() => setShowAbout(true)}
             style={{
               width: '100%',
-              background: 'transparent',
-              border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: '16px 20px',
-              color: 'var(--text)',
+              background: '#F7F7FA',
+              border: '1.5px solid #EBEBEB',
+              borderRadius: 16,
+              padding: '20px 22px',
+              color: '#111111',
               fontSize: 14,
+              fontWeight: 500,
               cursor: 'pointer',
               textAlign: 'left',
               display: 'flex',
@@ -310,13 +329,15 @@ export default function Home({ session, onNavigate }) {
               justifyContent: 'space-between',
               fontFamily: FONT,
             }}>
-            <span>Why this space is yours</span>
-            <span style={{ color: 'var(--accent)', fontSize: 18 }}>→</span>
+            <span style={{ color: '#555555' }}>Why this space is yours</span>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#5B4BD4" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+              <polyline points="12 5 19 12 12 19"/>
+            </svg>
           </button>
         </motion.div>
 
       </motion.div>
-
     </div>
   )
 }

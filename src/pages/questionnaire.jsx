@@ -8,7 +8,7 @@ const P = {
 
 const SECTIONS = [
   {
-    id: "about", title: "About you", emoji: "👤",
+    id: "about", title: "About you",
     questions: [
       { id: "Q1", label: "What would you like to be called?", type: "text", placeholder: "Your name or nickname", required: true },
       { id: "Q2", label: "How old are you?", type: "number", placeholder: "e.g. 32", required: true },
@@ -17,7 +17,7 @@ const SECTIONS = [
     ]
   },
   {
-    id: "journey", title: "Your IVF journey", emoji: "🌱",
+    id: "journey", title: "Your IVF journey",
     questions: [
       { id: "Q4", label: "Who is on this journey with you?", type: "single_select", required: true,
         options: [
@@ -72,7 +72,7 @@ const SECTIONS = [
     ]
   },
   {
-    id: "feelings", title: "How you're feeling", emoji: "💭",
+    id: "feelings", title: "How you're feeling",
     questions: [
       { id: "Q11", label: "How full is your emotional battery right now?", type: "slider", required: true,
         sublabel: "0 = completely drained   ·   100 = doing really well" },
@@ -104,20 +104,20 @@ const SECTIONS = [
     ]
   },
   {
-    id: "support", title: "Your support style", emoji: "🤝",
+    id: "support", title: "Your support style",
     questions: [
       { id: "Q15", label: "What are you mainly looking for in a connection?", type: "single_select", required: true,
         options: [
-          { value: "1", label: "🎧  A good listener — I want to support others" },
-          { value: "2", label: "💡  Practical advice — I like exchanging information" },
-          { value: "3", label: "📅  An accountability partner — regular check-ins" },
-          { value: "4", label: "💬  Someone to vent to — I just need to be heard" }
+          { value: "1", label: "A good listener — I want to support others" },
+          { value: "2", label: "Practical advice — I like exchanging information" },
+          { value: "3", label: "An accountability partner — regular check-ins" },
+          { value: "4", label: "Someone to vent to — I just need to be heard" }
         ]
       }
     ]
   },
   {
-    id: "life", title: "Life beyond IVF", emoji: "✨",
+    id: "life", title: "Life beyond IVF",
     questions: [
       { id: "Q9", label: "Your relationship with smoking or vaping:", type: "single_select", required: false,
         options: [
@@ -136,9 +136,9 @@ const SECTIONS = [
       { id: "Q16", label: "What's your comfort watch right now?", type: "text", placeholder: "e.g. Schitt's Creek, Bake Off...", required: false },
       { id: "Q17", label: "Your caffeine approach:", type: "single_select", required: false,
         options: [
-          { value: "1", label: "☕  Coffee lover — not cutting back" },
-          { value: "2", label: "🍵  Cutting back on caffeine" },
-          { value: "3", label: "🚫  Caffeine-free" }
+          { value: "1", label: "Coffee lover — not cutting back" },
+          { value: "2", label: "Cutting back on caffeine" },
+          { value: "3", label: "Caffeine-free" }
         ]
       },
       { id: "Q18", label: "How do you escape the IVF bubble? (Select all that apply)", type: "multi_select", required: false,
@@ -164,7 +164,7 @@ function encodeUser(answers) {
   const battery = parseInt(get("Q11") ?? 50) / 100
   const round   = parseInt(get("Q7")  || 1)  / 4
   const pathway = parseInt(get("Q5")  || 1)  / 4
-  const age     = parseInt(get("Q2")  || 30) / 50
+  const age     = Math.min(parseInt(get("Q2") || 30) / 55, 1)
   const partner = parseInt(get("Q4")  || 1)  / 4
 
   const diagOpts   = ["unexplained","pcos","low_reserve","male_factor","endometriosis","other"]
@@ -323,7 +323,7 @@ export default function Questionnaire({ session, onComplete }) {
 
         {/* Section header */}
         <div style={{ marginBottom: 28 }}>
-          <div style={{ fontSize: 28, marginBottom: 6 }}>{current.emoji}</div>
+          
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: P.text }}>{current.title}</h2>
         </div>
 
@@ -359,7 +359,7 @@ export default function Questionnaire({ session, onComplete }) {
           {isLast ? (
             <button onClick={handleSubmit} disabled={loading}
               style={{ padding: "12px 28px", borderRadius: 8, background: P.purple, color: "white", border: "none", fontSize: 14, fontWeight: 700, cursor: "pointer", opacity: loading ? 0.7 : 1 }}>
-              {loading ? "Saving..." : "Find my matches 💜"}
+              {loading ? "Saving..." : "Find my matches"}
             </button>
           ) : (
             <button onClick={handleNext}

@@ -24,15 +24,21 @@ function ResetPassword() {
 
   if (done) return (
     <div style={{ maxWidth: 400, margin: '80px auto', padding: 32, textAlign: 'center' }}>
-      <div style={{ fontSize: 36, marginBottom: 16 }}>✅</div>
+      <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(91,75,212,0.1)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5B4BD4" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
       <h2 style={{ color: '#2D2040', marginBottom: 8 }}>Password updated</h2>
-      <p style={{ color: '#6B6485' }}>You can now sign in with your new password.</p>
+      <p style={{ color: '#6B6485', marginBottom: 24 }}>You can now sign in with your new password.</p>
+      <button
+        onClick={() => supabase.auth.signOut()}
+        style={{ padding: '12px 28px', borderRadius: 8, background: '#7C6EAA', color: 'white', border: 'none', fontSize: 14, fontWeight: 600, cursor: 'pointer' }}
+      >
+        Sign in
+      </button>
     </div>
   )
 
   return (
     <div style={{ maxWidth: 400, margin: '80px auto', padding: 32, fontFamily: 'sans-serif' }}>
-      <div style={{ fontSize: 28, marginBottom: 8 }}>💜</div>
+      
       <h2 style={{ color: '#2D2040', marginBottom: 6 }}>Set a new password</h2>
       <p style={{ color: '#6B6485', marginBottom: 24, fontSize: 14 }}>Choose something you'll remember.</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -85,6 +91,7 @@ function App() {
     })
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (_event === 'INITIAL_SESSION') return   // handled by getSession above
       if (_event === 'PASSWORD_RECOVERY') {
         setIsResetting(true)
         setSession(session)
@@ -116,7 +123,7 @@ function App() {
   if (isResetting)           return <ResetPassword />
   if (!session)              return <Auth />
   if (!profile?.consent)     return <Disclaimer session={session} onComplete={() => fetchProfile(session.user.id)} />
-  if (!profile?.feature_vec?.length) return <Questionnaire session={session} onComplete={() => fetchProfile(session.user.id)} />
+  if (!Array.isArray(profile?.feature_vec) || profile.feature_vec.length === 0) return <Questionnaire session={session} onComplete={() => fetchProfile(session.user.id)} />
   return <Dashboard session={session} />
 }
 

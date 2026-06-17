@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { supabase } from '../lib/supabase'
 import { motion } from 'framer-motion'
 import { useSpring, animated } from '@react-spring/web'
 
@@ -96,13 +97,27 @@ export default function Community() {
   const [messages, setMessages]       = useState(SEEDED_MESSAGES)
   const [newMessage, setNewMessage]   = useState('')
   const [searchQuery, setSearchQuery] = useState('')
+  const [myInitials, setMyInitials]   = useState('?')
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) return
+      supabase.from('profiles').select('display_name').eq('id', user.id).single()
+        .then(({ data }) => {
+          if (data?.display_name) {
+            const initials = data.display_name.split(' ').map(w => w[0]).filter(Boolean).join('').slice(0, 2).toUpperCase()
+            setMyInitials(initials)
+          }
+        })
+    })
+  }, [])
 
   function sendMessage() {
     if (!newMessage.trim() || !activeRoom) return
     const msg = {
       id: Date.now(),
       author: 'You',
-      initials: 'V',
+      initials: myInitials,
       color: '#9B8EC4',
       text: newMessage.trim(),
       time: 'just now',

@@ -18,7 +18,7 @@ export default function Disclaimer({ session, onComplete }) {
 
   return (
     <div style={{ maxWidth: 560, margin: "60px auto", padding: 32, fontFamily: "sans-serif" }}>
-      <div style={{ fontSize: 28, marginBottom: 4 }}>📋</div>
+      
       <h1 style={{ margin: "0 0 6px", color: "#2D2040" }}>Before you continue</h1>
       <p style={{ color: P.muted, marginBottom: 24, lineHeight: 1.6, fontSize: 14 }}>
         This app connects people going through IVF based on shared experiences. To match you well, we ask about your journey and how you're feeling.
